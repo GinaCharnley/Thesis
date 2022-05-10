@@ -1,0 +1,56 @@
+
+# Packages 
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(viridis)
+library(sjPlot)
+library(ggpubr)
+
+# Fig. 2
+# Marginal effect plots
+plot1 <- plot_model(fit, type = "pred", title = "", terms = "Mean_drought") + xlab("Mean Drought")
+plot2 <- plot_model(fit, type = "pred", title = "", terms = "Avg_temp") + xlab("Average Temperature")
+plot3 <- plot_model(fit, type = "pred", title = "", terms = "Population_log") + xlab("Population (log)")
+plot4 <- plot_model(fit, type = "pred", title = "", terms = "Poverty_headcount") + xlab("Poverty Headcount (<$1.90/day)")
+plot5 <- plot_model(fit, type = "pred", title = "", terms = "withdrawal_percap") + xlab("Water Withdrawal (PerCapita)")
+
+ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 2, nrow = 3, labels = c("a","b","c","d","e"))
+
+
+Scenario projections and figures 
+
+```{predict using scenario data}
+# Import the scenario data
+data_s1 <- read_excel("~/Library/Mobile Documents/com~apple~Preview/Documents/PhD/Chapter 2 - Drought:Cholera, Africa/Data/Projection/scenario_projections.xlsx", sheet = "Scenario1")
+data_s2 <- read_excel("~/Library/Mobile Documents/com~apple~Preview/Documents/PhD/Chapter 2 - Drought:Cholera, Africa/Data/Projection/scenario_projections.xlsx", sheet = "Scenario2")
+data_s3 <- read_excel("~/Library/Mobile Documents/com~apple~Preview/Documents/PhD/Chapter 2 - Drought:Cholera, Africa/Data/Projection/scenario_projections.xlsx", sheet = "Scenario3")
+predictions_s1 <- predict(best_glm, data_s1, type = "response")
+predictions_s2 <- predict(best_glm, data_s2, type = "response")
+predictions_s3 <- predict(best_glm, data_s3, type = "response")
+```
+
+```{joining predictions to a df and plotting results (Fig.3 & 4)}
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(viridis)
+ISO <- data_s1$ISO
+Year <- data_s1$Year
+outbreak_proj <- as.data.frame(cbind(ISO,Year))
+proj_s1 <- cbind(outbreak_proj, predictions_s1)
+proj_s2 <- cbind(outbreak_proj, predictions_s2)
+proj_s3 <- cbind(outbreak_proj, predictions_s3)
+s1_2030 <- subset(proj_s1, Year == "2030") # this was repeated for the three scenarios for 2030, 2050 and 2070
+world <- st_read("TM_WORLD_BORDERS-0.3.shp", stringsAsFactors = FALSE)
+africa <- subset(world, REGION == "2")
+map_s1_2030 <- merge(africa, s1_2030, by = "ISO3", all.x = TRUE)
+ggplot(map_s1_2030) + geom_sf(aes(fill=s1_2030), lwd = 0) + labs(fill = "Disaster Frequency") + scale_fill_viridis_c(option = "plasma", direction = -1) + theme_void() # repeated for each scenario and year
+Fig.4 <- ggplot(outbreak_proj, aes(y = outbreak_proj, x = Year, fill = Scenario, color = Scenario)) + geom_point() + geom_smooth(se = TRUE) + theme_bw() + labs(y = "Cholera Outbreak Occurance Projections") + scale_color_viridis_d() + scale_fill_viridis_d()
+```
+
+Shapefiles available from: https://thematicmapping.org/downloads/world_borders.php
+License: Creative Commos Attribution-Share Alike (https://creativecommons.org/licenses/by-sa/3.0/), which is free to share and adapt. 
+
+
+
