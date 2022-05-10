@@ -1,3 +1,5 @@
+## CHAPTER 2 - Exploring relationships between drought and epidemic cholera in Africa using generalised linear models
+## DATA VISUALISATION
 
 # Packages 
 library(sf)
@@ -17,30 +19,8 @@ plot5 <- plot_model(fit, type = "pred", title = "", terms = "withdrawal_percap")
 
 ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 2, nrow = 3, labels = c("a","b","c","d","e"))
 
-
-Scenario projections and figures 
-
-```{predict using scenario data}
-# Import the scenario data
-data_s1 <- read_excel("~/Library/Mobile Documents/com~apple~Preview/Documents/PhD/Chapter 2 - Drought:Cholera, Africa/Data/Projection/scenario_projections.xlsx", sheet = "Scenario1")
-data_s2 <- read_excel("~/Library/Mobile Documents/com~apple~Preview/Documents/PhD/Chapter 2 - Drought:Cholera, Africa/Data/Projection/scenario_projections.xlsx", sheet = "Scenario2")
-data_s3 <- read_excel("~/Library/Mobile Documents/com~apple~Preview/Documents/PhD/Chapter 2 - Drought:Cholera, Africa/Data/Projection/scenario_projections.xlsx", sheet = "Scenario3")
-predictions_s1 <- predict(best_glm, data_s1, type = "response")
-predictions_s2 <- predict(best_glm, data_s2, type = "response")
-predictions_s3 <- predict(best_glm, data_s3, type = "response")
-```
-
-```{joining predictions to a df and plotting results (Fig.3 & 4)}
-library(sf)
-library(ggplot2)
-library(dplyr)
-library(viridis)
-ISO <- data_s1$ISO
-Year <- data_s1$Year
-outbreak_proj <- as.data.frame(cbind(ISO,Year))
-proj_s1 <- cbind(outbreak_proj, predictions_s1)
-proj_s2 <- cbind(outbreak_proj, predictions_s2)
-proj_s3 <- cbind(outbreak_proj, predictions_s3)
+# Fig 3
+# Subset projections for 2030, S1 
 s1_2030 <- subset(proj_s1, Year == "2030") # this was repeated for the three scenarios for 2030, 2050 and 2070
 world <- st_read("TM_WORLD_BORDERS-0.3.shp", stringsAsFactors = FALSE)
 africa <- subset(world, REGION == "2")
