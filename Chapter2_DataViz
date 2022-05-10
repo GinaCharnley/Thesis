@@ -8,6 +8,7 @@ library(dplyr)
 library(viridis)
 library(sjPlot)
 library(ggpubr)
+library(RColorBrewer)
 
 # Fig. 2
 # Marginal effect plots
@@ -24,13 +25,23 @@ ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 2, nrow = 3, labels = c("a",
 s1_2030 <- subset(proj_s1, Year == "2030") # this was repeated for the three scenarios for 2030, 2050 and 2070
 world <- st_read("TM_WORLD_BORDERS-0.3.shp", stringsAsFactors = FALSE)
 africa <- subset(world, REGION == "2")
+# https://thematicmapping.org/downloads/world_borders.php
+# License: CC BY-SA 3.0
 map_s1_2030 <- merge(africa, s1_2030, by = "ISO3", all.x = TRUE)
-ggplot(map_s1_2030) + geom_sf(aes(fill=s1_2030), lwd = 0) + labs(fill = "Disaster Frequency") + scale_fill_viridis_c(option = "plasma", direction = -1) + theme_void() # repeated for each scenario and year
-Fig.4 <- ggplot(outbreak_proj, aes(y = outbreak_proj, x = Year, fill = Scenario, color = Scenario)) + geom_point() + geom_smooth(se = TRUE) + theme_bw() + labs(y = "Cholera Outbreak Occurance Projections") + scale_color_viridis_d() + scale_fill_viridis_d()
-```
 
-Shapefiles available from: https://thematicmapping.org/downloads/world_borders.php
-License: Creative Commos Attribution-Share Alike (https://creativecommons.org/licenses/by-sa/3.0/), which is free to share and adapt. 
+ggplot(map_s1_2030) + geom_sf(aes(fill=s1_2030), lwd = 0) + 
+  labs(fill = "Disaster Frequency") + 
+  scale_fill_distiller(palette = "Greens", direction = -1) + theme_void() # repeated for each scenario and year
+# S2 palette: "Oranges"  
+# S3 palette: "Blues"
+
+# Fig. 4
+ggplot(outbreak_proj, aes(y = outbreak_proj, x = Year, fill = Scenario, color = Scenario)) + 
+  geom_point() + geom_smooth(se = TRUE) + theme_bw() + 
+  labs(y = "Cholera Outbreak Occurance Projections") + 
+  scale_color_manual(values = c("#5fa54b", "#f19d3b", "#5fa9dc") + 
+  scale_fill_manual(values = c("#5fa54b", "#f19d3b", "#5fa9dc")
+
 
 
 
