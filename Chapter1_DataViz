@@ -1,0 +1,54 @@
+## CHAPTER 1 - A Systematic Review of Traits and Risk Factors of Post-disaster Infectious Disease Outbreaks
+## DATA VISUALISATION
+
+# Packages 
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(viridis)
+library(reshape2)
+library(Hmisc)
+library(corrplot)
+library(ggdendro)
+
+# Fig. 2 
+fig.2 <- st_read("TM_WORLD_BORDERS-0.3.shp", stringsAsFactors = FALSE)
+# https://thematicmapping.org/downloads/world_borders.php
+# License: CC BY-SA 3.0
+fig.2 <- subset(fig.2, UN != "10") # remove antarctica 
+fig.2_and_data <- merge(fig.2, Region_map, by = "ISO3", all.x = TRUE)
+fig.2_and_data$Disaster_freq[is.na(fig.2_and_data$Disaster_freq)] = 0
+
+ggplot(fig.2_and_data) + geom_sf(aes(fill=Disaster_freq), lwd = 0) + 
+  labs(fill = "Disaster Frequency") + 
+  scale_fill_viridis_c(option = "plasma", direction = -1) + theme_void()
+
+# Fig. 3, 5, 6 and 7a
+table.3a <- table(Region$Region,Region$Disaster_type)
+Fig.3a <- as.data.frame.matrix(table.3a)
+Fig.3a$Region <- row.names(Fig.3a)
+Fig.3a <- melt(Fig.3a, id.vars=c("Region"), value.name = "Frequency")
+names(Fig.3a)[2]<-paste("Disaster")
+Fig.3a <- Fig.3a %>% mutate(Proportion = Frequency/sum(Frequency))
+Fig.3a <- Fig.3a %>% mutate(n = 137)
+Fig.3a <- Fig.3a %>% group_by(Region) %>% mutate(x = sum(Frequency))
+Fig.3a <- Fig.3a %>% mutate(Proportion2 = x/n)
+Fig.3a <- Fig.3a %>% mutate(Proportion_low = binconf(x,n)[,2], Proportion_high = binconf(x,n)[,3])
+
+ggplot() + geom_bar(aes(y=Proportion,x=reorder(Region, -Proportion),fill=Disaster), data = Fig.3a, stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_fill_viridis_d() + 
+  xlab("Disease (n=140)") + ylab("Proportion") + 
+  geom_point(data=Fig.3a, mapping=aes(x=Region, y=Proportion2), size=1, shape=21, fill="white") + 
+  geom_errorbar(data=Fig.3a, aes(x=Region, ymin = Proportion_low, ymax = Proportion_high), width=0.2) 
+
+# Fig. 4
+table.4a <- ftable(Chi_2_CT$Region,Chi_2_CT$Disaster_type)
+table.4a <- as.table(as.matrix(table.4a))
+chisq.4a <- chisq.test(table.4a)
+corrplot(chisq.4a$residuals, is.cor = FALSE, tl.col = "black", tl.cex = 0.75, tl.srt = 45)
+
+# Fig. 7b 
+Risks_total <- Risks_total %>% mutate(Proportion = Frequency/sum(Frequency))
+distances <- dist(Risks_total$Proportion)
+clusters <- hclust(distances)
+ggdendrogram(clusters, rotate = TRUE, size = 2)
