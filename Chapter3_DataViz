@@ -11,22 +11,215 @@ library(sf)
 
 # Fig. 1
 # Read in and format data
-cholera_nga <- read.xls(cholera_plots, sheets = "NGA")
+Fig1a-nga <- read.xls(chap3_plots, sheets = "Fig1a-nga")
+Fig1b-nga <- read.xls(chap3_plots, sheets = "Fig1b-nga")
+Fig1c-nga <- read.xls(chap3_plots, sheets = "Fig1c-nga")
 # repeat all for COD
 
-
 # 1a
-ggplot(chol_nga, aes(y = n, x = Year, color = Cholera, fill = Cholera)) + 
+ggplot(Fig1a-nga, aes(y = n, x = Year, color = Cholera, fill = Cholera)) + 
   geom_bar(stat = "identity", position = "stack") + theme_bw() + 
   labs(y = "Annual Cases/Deaths") + 
   scale_color_manual(values = c("#AB337CFF", "#FD9A6AFF")) + 
   scale_fill_manual(values = c("#AB337CFF", "#FD9A6AFF"))
   
-  # join both countries together and set the legend to the top 
-  ggarrange(p1, p2, legend.position = "top")
+# 1b
+ggplot(Fig1b-nga, aes(x = Date, y = Events, size = Fatalities)) + 
+  geom_point(color = "#AB337CFF") + theme_bw() + 
+  labs(y = "Monthly Event Frequency", size = "Monthly Fatalities")
+ 
+# 1c
+nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
+nga <- merge(nga, Fig1c-nga, by = "admin1Name", all.x = TRUE)
+ggplot(nga) + geom_sf() + geom_point(aes(x=lon, y=lat, size=conf_events, color=cholera_prop)) + 
+  geom_label_repel(aes(lon, lat, label = admin1Name), size = 3) + theme_void() + 
+  scale_color_viridis_c(option = "magma", direction = -1) + 
+  labs(color = "Cholera Cases (%)", size = "Conflict Events")   
+# https://data.humdata.org/dataset/drc-administrative-boundaries-levels-0-2
+# https://data.humdata.org/dataset/nga-administrative-boundaries
+# License: CC BY-IGO
+  
+# Join both countries together and set the legend to the top 
+ggarrange(p1, p2, legend.position = "top")
+
+# Fig. 2
+# Read in data 
+fig2a_nga <- read.xls(chap3_plots, sheets = "Fig2-nga")
+# repeat for COD
+
+ggplot(fig2a, aes(x = reorder(Adm1, n), y = n, color = Dataset, fill = Dataset)) + 
+  geom_bar(stat = "identity", position = "dodge") + theme_bw() + 
+  labs(x = "State", y = "Percentage of Total Events") + 
+  scale_color_manual(values = c("#872CA2", "#F6A97A")) + 
+  scale_fill_manual(values = c("#872CA2", "#F6A97A")) + coord_flip()
+  
+# Fig. 3
+# Read in and format the swimmer plot data 
+outb <- read_excel("1997-2020, all new.xlsx", sheet = "outb_nga")
+conf <- read_excel("1997-2020, all new.xlsx", sheet = "conf_nga")                                                                                                            
+conf$Adm1[conf$Adm1 == "Federal Capital Territory"] <- "FCT"
+outb$Adm1[outb$Adm1 == "Federal Capital Territory"] <- "FCT"
+outb <- outb[c(3,10)]
+conf <- conf[c(2,10)]
+conf <- conf %>% distinct()
+outb <- outb %>% distinct()
+names(conf)[2]<-paste("Conflict")
+names(outb)[2]<-paste("Outbreaks")
+
+# Create the observational period
+conf$start <- 1
+conf$end <-1220
+
+# Calculate conflict gap 
+conf <-  conf %>%
+  mutate(weeks_from_start = Conflict - start)
+
+conf <- conf %>%
+  arrange(weeks_from_start, Adm1) %>%
+  group_by(Adm1) %>%
+  mutate(conflict_gap = weeks_from_start - lag(weeks_from_start)) %>%
+  mutate(conflict_gap = ifelse(is.na(conflict_gap), 0, conflict_gap))
+
+gap = 1 
+
+# Create conflict periods 
+df1 <- conf %>% group_by(Adm1) %>% 
+  mutate(exp_start = case_when(
+    conflict_gap == 0 ~ Conflict, 
+    conflict_gap > gap ~ Conflict))
+
+df1 <- df1 %>% group_by(Adm1) %>% 
+  mutate(exp_end = case_when(
+    lead(conflict_gap) > gap ~ Conflict, 
+    is.na(lead(conflict_gap)) ~ Conflict,
+    all(conflict_gap<gap) ~ max(Conflict))) %>% 
+  arrange(Adm1)
+
+df1 <- df1 %>% group_by(Adm1, exp_start, exp_end) %>% distinct() %>% ungroup()
+
+df2 <- df1 %>% select(Adm1, exp_start) %>% distinct() 
+df2 <- df2 %>% filter(!is.na(exp_start)) 
+df2 <- df2 %>% group_by(Adm1) %>% 
+  mutate(outbreak_index = paste0(Adm1, "_", 1:n()))
+
+df3 <- df1 %>% select(Adm1, exp_end) %>% distinct() 
+df3 <- df3 %>% filter(!is.na(exp_end))
+df3 <- df3 %>% group_by(Adm1) %>% 
+  mutate(outbreak_index = paste0(Adm1, "_", 1:n()))
+
+conflict_periods <- left_join(df2, df3)
+conflict_periods <- conflict_periods[c(1,2,4,3)]
+
+# Fix exp that start and end on same day 
+conflict_periods <- conflict_periods %>% group_by(Adm1) %>% 
+  mutate(exp_end2 = case_when(
+    exp_end == exp_start ~ exp_end + 1,
+    exp_end != exp_start ~ exp_end)) 
+
+conflict_periods <- conflict_periods %>% group_by(Adm1) %>% 
+  mutate(exp_start2 = case_when(
+    exp_start == lag(exp_end2) ~ exp_start + 1,
+    exp_start != lag(exp_end2) ~ exp_start,
+    exp_start == min(exp_start) ~ exp_start)) %>% 
+  arrange(Adm1)
+
+conflict_periods <- conflict_periods[-c(2,3)]
+names(conflict_periods)[3]<-paste("exp_end")
+names(conflict_periods)[4]<-paste("exp_start")
+
+# Tidy up 
+conflict_periods$outbreak_index <- NULL
+conflict_periods <- conflict_periods %>% arrange(Adm1)
+conflict_periods$start <- 1
+conflict_periods$end <-   1220
+conflict_periods$stability <- "Conflict"
+conflict_periods <- conflict_periods[c(1,4,5,3,2,6)]
+
+# Create peace periods 
+peace_periods <- conflict_periods %>% group_by(Adm1) %>% 
+  mutate(exp_start2 = case_when(
+    exp_start == min(exp_start) ~ start,
+    exp_start > min(exp_start) ~ lag(exp_end) + 1, 
+    exp_start == max(exp_start) ~ max(exp_end) + 1))
+
+last_row <- conflict_periods %>% group_by(Adm1) %>% 
+  mutate(exp_start3 = case_when(
+    exp_start == max(exp_start) ~ max(exp_end) + 1))
+
+peace_periods2 <- peace_periods %>% group_by(Adm1) %>% 
+  mutate(exp_end2 = case_when(
+    exp_start == min(exp_start) ~ exp_start - 1,
+    exp_start > min(exp_start) ~ exp_start - 1,
+    exp_end == max(exp_end) ~ end))
+peace_periods2$stability2 <- "Peace" 
+
+last_row2 <- conflict_periods %>% group_by(Adm1) %>% 
+  mutate(exp_end3 = case_when(
+    exp_end == max(exp_end) ~ end))
+
+last_row <- last_row[c(1,7)]
+last_row2 <- last_row2[c(1,7)]
+last_row <- na.omit(last_row)
+last_row2 <- na.omit(last_row2)
+last_row <- merge(last_row, last_row2, by = "Adm1")
+rm(last_row2)
+names(last_row)[2]<-paste("exp_start2")
+names(last_row)[3]<-paste("exp_end2")
+
+peace_periods2 <- peace_periods2[c(1,7,8,9)] 
+last_row$stability2 <- "Peace" 
+peace_periods2 <- merge(peace_periods2, last_row, all = TRUE)
+
+# Fix exp that start and end on same day 
+peace_periods2 <- peace_periods2 %>% group_by(Adm1) %>% 
+  mutate(exp_end3 = case_when(
+    exp_end2 == exp_start2 ~ exp_end2 + 1,
+    exp_end2 != exp_start2 ~ exp_end2)) 
+
+peace_periods2 <- peace_periods2 %>% group_by(Adm1) %>% 
+  mutate(exp_start3 = case_when(
+    exp_start2 == lag(exp_end3) ~ exp_start2 + 1,
+    exp_start2 != lag(exp_end3) ~ exp_start2,
+    exp_start2 == min(exp_start2) ~ exp_start2)) %>% 
+  arrange(Adm1)
+  
+ # Tidy up 
+names(peace_periods2)[6]<-paste("exp_start")
+names(peace_periods2)[5]<-paste("exp_end")
+names(peace_periods2)[4]<-paste("stability")
+peace_periods2 <- peace_periods2[-c(2,3)]
+
+swim_dat <- merge(conflict_periods, peace_periods2, all = TRUE)
+swim_dat <- subset(swim_dat, exp_start != 1221)
+swim_dat$start <- 1
+swim_dat$end <-   1220 
+  
+# Join to outbreak data
+swim_dat2 <- merge(swim_dat, outb, by = "Adm1", all = TRUE)
+swim_dat2 <- na.omit(swim_dat2)
+swim_dat2 <- swim_dat2 %>% distinct() 
+# Repeat for COD
+
+# To prevent having to do this everytime I want to replot, this is saved as a data file 
+swimdat_nga <- read.csv("swim_dat_nga.csv")
+swimdat_cod <- read.csv("swim_dat_cod.csv")
+
+# Plot 
+# Create y axis labels 
+pos <- as.numeric(c(1, 158, 419, 680, 941, 1201))
+labels <- as.character(c("1997_1", "2000_1", "2005_1", "2010_1", "2015_1", "2020_1"))  
+  
+# Plot in ggplot 
+show_col(viridis_pal(option = "magma")(20))
+ggplot(swim_dat2) + geom_segment(aes(x=Adm1, xend=Adm1, y=exp_start, yend=exp_end, color=stability), size = 4.5) + 
+  coord_flip() + labs(x = "State", y = "Year_Epiweek", color = "Stability") + 
+  theme_bw() + scale_colour_manual(values = c("#FED799FF", "#EE5B5EFF")) + 
+  geom_point(aes(x=Adm1, y=Outbreaks), size=3, shape = 5, color = "#6E1E81FF") + 
+  scale_y_discrete(limits = pos, labels = labels) + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5, face = "bold"),
+        axis.text.y = element_text(face = "bold"),
+        legend.title = element_text(size=15),
+        legend.text = element_text(face = "bold"))
   
   
   
-  
-  COD sub-national: https://data.humdata.org/dataset/drc-administrative-boundaries-levels-0-2
-# NGA sub-national: https://data.humdata.org/dataset/nga-administrative-boundaries
