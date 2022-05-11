@@ -1,0 +1,32 @@
+## CHAPTER 2 - Using Self-Controlled Case Series to Understand the Relationship between Conflict and Cholera in Nigeria and the Democratic Republic of Congo
+## DATA VISUALISATION
+
+# Packages 
+library(dplyr)
+library(ggplot2)
+library(viridis)
+library(ggpubr)
+library(ggrepel)
+library(sf)
+
+# Fig. 1
+# Read in and format data
+cholera_nga <- read.xls(cholera_plots, sheets = "NGA")
+# repeat all for COD
+
+
+# 1a
+ggplot(chol_nga, aes(y = n, x = Year, color = Cholera, fill = Cholera)) + 
+  geom_bar(stat = "identity", position = "stack") + theme_bw() + 
+  labs(y = "Annual Cases/Deaths") + 
+  scale_color_manual(values = c("#AB337CFF", "#FD9A6AFF")) + 
+  scale_fill_manual(values = c("#AB337CFF", "#FD9A6AFF"))
+  
+  # join both countries together and set the legend to the top 
+  ggarrange(p1, p2, legend.position = "top")
+  
+  
+  
+  
+  COD sub-national: https://data.humdata.org/dataset/drc-administrative-boundaries-levels-0-2
+# NGA sub-national: https://data.humdata.org/dataset/nga-administrative-boundaries
