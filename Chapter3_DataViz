@@ -8,6 +8,7 @@ library(viridis)
 library(ggpubr)
 library(ggrepel)
 library(sf)
+library(cowplot)
 
 # Fig. 1
 # Read in and format data
@@ -219,7 +220,22 @@ ggplot(swim_dat2) + geom_segment(aes(x=Adm1, xend=Adm1, y=exp_start, yend=exp_en
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5, face = "bold"),
         axis.text.y = element_text(face = "bold"),
         legend.title = element_text(size=15),
-        legend.text = element_text(face = "bold"))
-  
-  
+        legend.text = element_text(face = "bold")) + guides(color = FALSE)
+# Join in cowplot to have shared x axis and legend
+legend_t <- get_legend(fig1 + theme(legend.position = "top"))     
+plot_grid(legend_b, fig3 + theme(axis.text.x = element_blank(),
+                                 axis.ticks.x = element_blank(), 
+                                 axis.title.x = element_blank()), 
+        fig4, labels = c("","a","b"), ncol = 1, rel_heights = c(.1, 1, 1))
+
+# Fig. 4    
+IRR <- read.xls(chap3_plots, sheets = "Fig4")
+IRR_nga <- subset(IRR, Country == "NGA")
+nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
+nga <- merge(nga, IRR_nga, by = "admin1Name", all.x = TRUE)
+ggplot(nga) + geom_sf(aes(fill = IRR)) +
+  geom_label_repel(aes(lon, lat, label = admin1Name), size = 3) + theme_void() + 
+  scale_color_viridis_c(option = "magma", direction = -1)      
+# Repeat for COD
+     
   
