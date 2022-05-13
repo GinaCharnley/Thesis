@@ -4,10 +4,139 @@
 # Packages 
 library(dplyr)
 library(ggplot2)
-library(viridis)
-library(ggpubr)
-library(ggrepel)
 library(sf)
-library(cowplot)
+library(ggnewscale)
+library(RColorBrewer)
+library(zoo)
+library(lubridate)
+library(ggpubr)
 
-# Fig. 1
+# Fig. 1a
+nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
+# Shapefiles from same location as Chapter 3
+df1 <- read_excel("Chapter 4 - Random Forests/Data/Cholera/linelist_data_positive.xlsx", sheet = "raw")
+df1 <- df1 %>% group_by(State) %>% tally()
+df1$State[df1$State == "FCT"] <- "Federal Capital Territory"
+names(df1)[1]<-paste("admin1Name")
+nga2 <- merge(nga, df1, by = "admin1Name", all.x = TRUE)
+ggplot(nga2) + geom_sf(aes(fill=n), lwd = 0) + 
+  labs(fill = "Confirmed Cholera Cases") + 
+  scale_fill_distiller(palette = "RdPu", direction = 1) + theme_void() + 
+  geom_sf_label(aes(label = admin1Name), size=3.5, fontface = 2) +
+  theme(legend.title = element_text(face = "bold", size = 12),
+        legend.text = element_text(face = "bold", size = 12),
+        legend.position = "top",legend.key.size = unit(1, 'cm'))
+        
+# Fig. 1b
+df2 <- read_excel("Chapter 4 - Random Forests/Data/Cholera/linelist_data_positive.xlsx")
+df2 <- df2 %>% group_by(Sex, AgeClass) %>% tally()
+df2$AgeClass <- factor(df2$AgeClass, levels = c("0-4Yrs", "5-14Yrs", "15-24Yrs", "25-34Yrs", "35-44Yrs", "45Yrs+", "Unknown"))
+ggplot(df2, aes(x = AgeClass, y = n, color = Sex, fill = Sex)) + 
+  geom_bar(stat = "identity", position = "stack") + labs(x = "", y = "Incidence") + theme_bw() + 
+  scale_color_manual(values = c("#51dc9a","#4aa287")) + scale_fill_manual(values = c("#51dc9a","#4aa287")) + 
+  theme(legend.key.size = unit(1, 'cm'), legend.title = element_text(size=15), 
+        legend.text = element_text(size=15), axis.text = element_text(face="bold", size = 10))
+
+# Fig. 2
+df1 <- read.csv("total.csv")
+df1$dates <- as.Date(df1$dates)
+coeff <- 10
+ggplot(df1, aes(x = dates, y = Mean, ymin = Mean-Std, ymax = Mean+Std, group = 1)) +
+  geom_line(color = "#417260", size = 1) +
+  geom_ribbon(fill = "#91e2d3", alpha = .6) + 
+  geom_bar(aes(y = counts/coeff), stat = "identity", color = "#3c7ae7", fill = "#3c7ae7") + 
+  facet_wrap(~State + year, scales = "free") + 
+  theme_bw() + labs(x = "Date") +
+  scale_y_continuous(name = "R",sec.axis = sec_axis(~.*coeff, name="Incidence")) + 
+  geom_hline(yintercept=1, linetype="dashed", color = "red", size=.5) +
+  theme(axis.text = element_text(face="bold", size = 10), strip.text = element_text(face="bold", size = 10))
+
+# Fig. 3
+var_importance <- read_excel("Chapter 4 - Random Forests/Hierarchical Regression + Random Forests/Hierachical Regression/var_importance.xlsx", 
+                             sheet = "Sheet2")
+ggplot(var_importance, aes(x = reorder(Covariate, Importance), y = Importance, 
+                           color = `R Sensitivity Analysis`, fill = `R Sensitivity Analysis`)) + 
+  geom_bar(stat = "identity", position = "dodge") + theme_bw() + coord_flip() + labs(x = "") + 
+  scale_color_manual(values = c("#e3a0ba", "#de497b", "#a44664")) + 
+  scale_fill_manual(values = c("#e3a0ba", "#de497b", "#a44664")) + 
+  theme(legend.position = "top", axis.text = element_text(face="bold", size = 10)) +
+  geom_text(aes(label=Cluster), color = "black", hjust = -2, fontface = 2)
+
+# Fig. 4
+ggplot(pred_m3, aes(x = R, y = pred_m3))+ geom_point(color = "#56ae6c", size = 3) + theme_bw() + 
+  labs(x = "Incidence-based R Values", y = "Covariate-based R Values") + xlim(0.5,2.5) + ylim(0,3) +
+  geom_errorbar(aes(ymin=pred_m3-error, ymax=pred_m3+error), 
+                width=.03, size=.8, alpha=.6) + geom_abline(slope = 1, intercept = 0) +
+  annotate("text", x = 1, y=2.25, label= "RMSE = 0.33", size = 5) + 
+  annotate("text", x = 1, y=2.5, label= "Correlation = 0.87", size = 5) +
+  annotate("text", x = 1, y=2, label = lb3, parse = TRUE, size = 5) +
+  theme(axis.text = element_text(face="bold", size = 10))
+
+# Fig. 5
+df1 <- read_excel("predvactual_r_averages.xlsx")
+nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
+df1$admin1Name[df1$admin1Name == "FCT"] <- "Federal Capital Territory"
+nga <- merge(nga, df1, by = "admin1Name", all.x = TRUE)
+ggplot(nga) +
+  geom_sf(aes(fill=n), color = "grey") + scale_fill_distiller("Covariate-based", palette = "Purples", direction = 1) +
+  new_scale("fill") + geom_sf(aes(fill=n), data = subset(nga, R == "Incidence-based"), color = "grey") +
+  scale_fill_distiller("Incidence-based", palette = "Greens", direction = 1) +
+  theme_void() + geom_label(aes(x=lon, y=lat, label=admin1Name, color = R_threshold), size=4, fontface = 2) + 
+  labs(color = "R Threshold") + scale_color_manual(values = c("#ff5d18", "black")) + 
+  theme(legend.title = element_text(size=15, face="bold"), 
+        legend.text = element_text(size=12,face="bold")) + 
+  guides(color = guide_legend(override.aes = list(size = 6)))
+
+# Fig. 6
+df3 <- read_excel("Chapter 4 - Random Forests/Hierarchical Regression + Random Forests/Exposure Periods/
+                    Hypothetical Exp Periods Results/Hypothetical Exp Periods FInal/averages.xlsx")
+df3$Light <- factor(df3$Light, levels = c("Red", "Amber", "Green"))
+p1 <- 
+  ggplot(subset(df3, Variable == "R"), aes(x = Light, y = Mean, ymin = Min, ymax = Max, color = Light)) + 
+  geom_point(size = 3) + geom_errorbar(width = 0.3, size = 4, alpha = 0.6) + theme_bw() + 
+  scale_color_manual(values = c("red", "orange", "green")) + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        strip.text = element_text(face="bold", size = 10),
+        legend.position = "none") + 
+  geom_hline(yintercept=1, linetype="dashed", color = "black") + labs(title = "R", x = "")
+
+p2 <- 
+  ggplot(subset(df3, Variable == "Conflict"), aes(x = Light, y = Mean, ymin = Min, ymax = Max, color = Light)) + 
+  geom_point(size = 3) + geom_errorbar(width = 0.3, size = 4, alpha = 0.6) + theme_bw() + 
+  scale_color_manual(values = c("red", "orange", "green")) + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        strip.text = element_text(face="bold", size = 10),
+        legend.position = "none") + 
+  labs(title = "Conflict", x = "")
+
+p3 <- 
+  ggplot(subset(df3, Variable == "MPI"), aes(x = Light, y = Mean, ymin = Min, ymax = Max, color = Light)) + 
+  geom_point(size = 3) + geom_errorbar(width = 0.3, size = 4, alpha = 0.6) + theme_bw() + 
+  scale_color_manual(values = c("red", "orange", "green")) + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        strip.text = element_text(face="bold", size = 10),
+        legend.position = "none") + 
+  labs(title = "MPI", x = "")
+
+p4 <- 
+  ggplot(subset(df3, Variable == "Sanitation"), aes(x = Light, y = Mean, ymin = Min, ymax = Max, color = Light)) + 
+  geom_point(size = 3) + geom_errorbar(width = 0.3, size = 4, alpha = 0.6) + theme_bw() + 
+  scale_color_manual(values = c("red", "orange", "green")) + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        strip.text = element_text(face="bold", size = 10),
+        legend.position = "none") + 
+  labs(title = "Sanitation", x = "")
+
+p5 <- 
+  ggplot(subset(df3, Variable == "PDSI"), aes(x = Light, y = Mean, ymin = Min, ymax = Max, color = Light)) + 
+  geom_point(size = 3) + geom_errorbar(width = 0.3, size = 4, alpha = 0.6) + theme_bw() + 
+  scale_color_manual(values = c("red", "orange", "green")) + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        strip.text = element_text(face="bold", size = 10),
+        legend.position = "none") + 
+  labs(title = "PDSI", x = "")
+
+p6 <- ggarrange(p2,p3,p4,p5, nrow = 2, ncol = 2)
+ggarrange(p1,p6, ncol = 2)
+
+
