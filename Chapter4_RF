@@ -1,0 +1,124 @@
+## CHAPTER 4 - The impact of social and environmental extremes on cholera time varying reproduction number in Nigeria
+## INCIDENCE, R, COVARIATE SELECTION, RANDOM FOREST, TRAFFIC-LIGHT SYSTEM  
+
+# Load packages 
+library(incidence)
+library(EpiEstim) 
+library(data.table)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
+## INCIDENCE & R BY STATE 
+## Import my positive linelist data and just save the onset and state columns 
+# Subset it 
+df1 <- linelist_data[c(1,7)]
+names(df1)[2]<-paste("date_of_onset")
+onset18 <- subset(df1, date_of_onset <= "2018-12-31")
+onset19 <- subset(df1, date_of_onset >= "2019-01-01")
+
+# Save the states as a list 
+# Run 18 and 19 separately because long gaps with no cases increases R uncertainty
+adm_list <- (split(onset18, onset18$State))
+
+# Subset out states with insufficient cases (40 case threshold) 
+adm_list <- adm_list[sapply(adm_list, nrow)>=40] 
+adm_data <- names(adm_list)
+
+# Save serial interval and standard deviations for the sensitivity analysis 
+mu1 <- 3
+mu2 <- 5
+mu3 <- 8
+sd <- 8 
+
+# Run function calculating Rt for each state over monthly sliding windows 
+R_by_state <- function(adm_data) {
+  i <- incidence(as.Date(adm_data$date_of_onset))
+  t_start <- seq(2, nrow(i$count)-29) 
+  t_end <- t_start + 29
+  i <- data.frame(i$dates, i$counts)
+  names(i)[1]<-paste("date")
+  names(i)[2]<-paste("count")
+  Rt <- estimate_Rt(i, estimation_family='epiestim', cumulative=TRUE, method = 'parametric_si', 
+                    config = list(mean_si=mu2, std_si=sd, t_start = t_start, t_end = t_end))# change based on si
+  i$t_start <- seq(nrow(i))
+  Rt <- merge(i, Rt, by = "t_start", all.x = TRUE)
+}
+output_list18 <- lapply(adm_list, R_by_state)
+
+## Do the same for 2019 then join them 
+output_list <- Map(rbind, output_list18, output_list19)
+
+# Merge to one data frame 
+output_df <- ldply(output_list, data.frame)
+output_df <- output_df[c(1,3,2,5,4,6,7,9,13)]
+names(output_df)[1]<-paste("state")
+
+# To remove the posterior CV warning message I ran states individually, so I could change t_start depending on their reported cases 
+df1 <- df1[c(1,7)]
+names(df1)[2]<-paste("date_of_onset")
+df1$date_of_onset <- as.Date(df1$date_of_onset)
+onset18 <- subset(df1, date_of_onset <= "2018-12-31")
+onset19 <- subset(df1, date_of_onset >= "2019-01-01")
+i18 <- onset18 %>% group_by(State, date_of_onset) %>% tally()
+i19 <- onset19 %>% group_by(State, date_of_onset) %>% tally()
+i18 <- i18 %>% group_by(State) %>% mutate(total = sum(n))
+i19 <- i19 %>% group_by(State) %>% mutate(total = sum(n))
+i18 <- subset(i18, total >= 40)
+i19 <- subset(i19, total >= 40)
+
+list2env(split(i18, i18$State), envir=.GlobalEnv)
+
+d <- subset(onset18, State == "Adamawa")
+i <- incidence(as.Date(d$date_of_onset))
+t_start <- seq(2, nrow(i$count)-29) 
+t_end <- t_start + 29
+i <- data.frame(i$dates, i$counts)
+names(i)[1]<-paste("date")
+names(i)[2]<-paste("count")
+Rt <- estimate_Rt(i, estimation_family='epiestim', cumulative=TRUE, method = 'parametric_si', 
+                  config = list(mean_si=mu2, std_si=sd, t_start = t_start, t_end = t_end))# change based on si
+names(Adamawa)[2]<-paste("date_start")
+Adamawa <- merge(Adamawa, Rt, by = "date_start", all = TRUE)
+
+list2env(split(i18, i18$State), envir=.GlobalEnv)
+# "Adamawa" "Bauchi"  "Borno"   "Gombe"   "Katsina" "Yobe"   
+# "Adamawa" "Borno" 
+
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
+## COVARIATE SELECTION 
+# Covariate selection is based on variable importance and correlation clustering 
+
+# Correlation clustering 
+# Read in data 
+data1 <- read.csv("df1.csv") # file: "Hierarchical Regression + Random Forests/Data"
+data1 <- data1[-c(1:3)]
+data1 <- na.omit(data1)
+
+covar_to_test <- names(data1)[1:(ncol(data1))]
+as.data.frame(covar_to_test)
+
+corr1 <-  cor(data1)
+heatmap(corr1, keep.dendro = TRUE)
+corr1_df <- as.data.frame(corr1) 
+corr1_df$param1 <- rownames(corr1_df)
+corr1_df %<>% gather(param2, correlation, -param1)
+
+corr1_df <- corr1_df %>% mutate(cluster = case_when(correlation > 0.75 ~ 1,
+                                                    correlation < -0.75 ~ 1,
+                                                    correlation <= 0.75 ~ 0))
+
+
+
+
+
+
+
+
+
+
+
