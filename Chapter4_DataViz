@@ -1,0 +1,13 @@
+## CHAPTER 4 - The impact of social and environmental extremes on cholera time varying reproduction number in Nigeria
+## DATA VISUALISATION
+
+# Packages 
+library(dplyr)
+library(ggplot2)
+library(viridis)
+library(ggpubr)
+library(ggrepel)
+library(sf)
+library(cowplot)
+
+# Fig. 1
