@@ -1,0 +1,93 @@
+## Chapter 5 Figures
+
+library(ggplot2)
+library(dplyr)
+library(sf)
+library(maptools)
+library(ggspatial)
+library(ggpubr)
+
+# FIGURE 1
+
+data("wrld_simpl")
+world_sf <- st_as_sf(wrld_simpl)
+worldNga <- subset(world_sf, NAME == 'Nigeria')
+nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
+
+p1 <- 
+ggplot() + geom_sf(data = worldNga) + geom_sf(data = subset(nga, admin1Name == "Borno"), aes(fill=admin1Name), lwd = 1) + 
+  scale_fill_manual(values = "#e1a136") + guides(fill = "none") +
+  geom_sf_label(data = subset(nga, admin1Name == "Borno"), aes(label = admin1Name), size = 6) + 
+  geom_sf_label(data = subset(nga, admin1Name == "Federal Capital Territory"), aes(label = admin0Name), size = 6) +
+  annotation_scale(location = "br", bar_cols = c("grey60", "white")) + 
+  annotation_north_arrow(
+    location = "br", which_north = "true",
+    pad_x = unit(0.4, "in"), pad_y = unit(0.4, "in"),
+    style = north_arrow_nautical(
+      fill = c("grey40", "white"),
+      line_col = "grey20")) + theme_minimal()
+
+
+borno <- st_read("nga_admbnda_adm2_osgof_20170222.shp", stringsAsFactors = FALSE) 
+borno <- subset(borno, admin1Name == "Borno")
+data <- data.frame(borno$admin2Name)
+names(data)[1]<-paste("admin2Name")
+data <- data %>% mutate(Accesibility = 
+                          case_when(admin2Name == c("Abadam") ~ "N", 
+                                    admin2Name == c("Kukawa") ~ "N",
+                                    admin2Name == c("Guzamala") ~ "N",
+                                    admin2Name == c("Marte") ~ "N"))
+data$Accesibility[is.na(data$Accesibility)] <- "Y"
+data <- data %>% mutate(Affected = 
+                          case_when(admin2Name == c("Abadam") ~ "N", 
+                                    admin2Name == c("Kukawa") ~ "N",
+                                    admin2Name == c("Guzamala") ~ "N",
+                                    admin2Name == c("Marte") ~ "N",
+                                    admin2Name == c("Chinok") ~ "N",
+                                    admin2Name == c("Gubio") ~ "N",
+                                    admin2Name == c("Monguno") ~ "N",
+                                    admin2Name == c("Kala/Balge") ~ "N"))
+data$Affected[is.na(data$Affected)] <- "Y"
+Cases <- c(0,54,313,27,113,0,118,11,0,0,1003,284,1556,72,0,549,0,13,346,20,1843,0,0,0,28,35,37)
+data <- cbind(data, Cases)
+data[23,3] <- "N"
+data[6,3] <- "N"
+data$Cases[data$Cases == 0] <- NA
+borno <- merge(borno, data, by = c("admin2Name"), all.x = TRUE)
+coords <- read.csv("lga_coords_borno.csv")
+
+p2 <-
+ggplot() + geom_sf(data = borno) + 
+  geom_sf(data = subset(borno, Affected == "Y"), aes(fill = Affected)) +
+  geom_sf(data = subset(borno, Accesibility == "N"), aes(fill = Accesibility)) + 
+    scale_fill_manual(values = c("#bb6c5a", "#40a77e"), labels = c("Inaccessible LGA", "Affected LGA")) + 
+  labs(fill = "") + theme_minimal() +
+  stat_sf_coordinates(data = borno, aes(size = Cases), alpha = 0.7, color = "#572b88") +
+  annotation_scale(location = "br", bar_cols = c("grey60", "white"))  +
+  geom_text(data = coords, aes(x, y, label = lga), size = 3, color = "black", fontface = "bold") 
+
+## FIGURE 2
+## A
+ggplot(responses, aes(x = reorder(Response, n), y = n)) + 
+  geom_bar(stat = "identity", color = "#6f2b7f", fill = "#6f2b7f") + 
+  coord_flip() + labs(x = "Response", y = "Frequency") + theme_minimal() + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        axis.title = element_text(face="bold", size = 12))
+
+## B
+ggplot(risks, aes(x = reorder(Risks, n), y = n)) + 
+  geom_bar(stat = "identity", color = "#62ad50", fill = "#62ad50") + 
+  coord_flip() + labs(x = "Risk", y = "Frequency") + theme_minimal() + 
+  theme(axis.text = element_text(face="bold", size = 10), 
+        axis.title = element_text(face="bold", size = 12))
+
+
+exp2 %>% mutate(label = if_else(Year == max(Year), as.character(`Country Name`), NA_character_)) %>%
+  ggplot(aes(x = Year, y = HealthExpGDP, colour = `Country Code`)) + geom_line() + 
+  geom_label_repel(aes(label = label), nudge_x = 1, na.rm = TRUE) + 
+  guides(color = "none") + theme_minimal() + labs(y = "Health Expenditure (%GDP)")
+
+ggplot() + geom_sf(data = world, aes(fill=HealthExpGDP2019), lwd = 0.5) + 
+  scale_fill_distiller(palette = "Reds", direction = 1) +
+  geom_label_repel(data = world, aes(x = LON, y = LAT, label = NAME), size = 3) + 
+  annotation_scale(location = "br", bar_cols = c("grey60", "white")) + theme_minimal() + labs(x = "", y = "")
