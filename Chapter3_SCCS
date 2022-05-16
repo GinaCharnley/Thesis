@@ -12,8 +12,6 @@ library(tidyverse)
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 ## SCCS 
-
-## National 
 # Load in data and format 
 outb <- read_excel("1997-2020, all new.xlsx", sheet = "outb_nga")
 conf <- read_excel("1997-2020, all new.xlsx", sheet = "conf_nga")                                                                                                            
@@ -45,13 +43,125 @@ data1 <- data1  %>%
   mutate(indiv = group_indices(., Adm1, exday, eventday)) 
 data1 <- data1 %>% distinct()
 
-# Fit the models to the data for each exposure period 
-# Onset
+
+## NATIONAL 
+# Fit the models to the data for each exposure period and save output 
+data1 <- data1 %>% gather(exp_name, exp_end, 7:12)
+
+adm_data <- unique(data1$exp_name)
+adm_list <- data1 %>% group_split(exp_name)
+names(adm_list) <- sapply(adm_list, function(x) x$exp_name[1])
+
+clogdf <- lapply(adm_list, FUN = function(adm_data) {
+  datLong <- plyr::ddply(.data = adm_data,
+                         .variables = "indiv",
+                         .fun = function(df) {
+                           
+                           cuts <- with(df, sort(c(start, end, start1, exp_end))) 
+                           
+                           out <- data.frame(indiv = df$indiv,
+                                             exday = df$exday,
+                                             eventday = df$eventday,
+                                             start = head(cuts, -1),
+                                             end   = cuts[-1])
+                           
+                           out$event <- as.numeric(out$start <= df$eventday & df$eventday <= out$end)
+                           
+                           out$exgr <- as.numeric(df$start1 <= out$start & out$end <= df$exp_end)
+                           
+                           out$interval <- out$end - out$start
+                           out$loginterval <- log(out$interval)
+                           
+                           out
+                         })
+  datLong <- subset(datLong, start < 1220) 
+  datLong[datLong=="-Inf"]<-0
+  clogit <- clogit(event ~ exgr + strata(indiv) + offset(loginterval), data = datLong)
+  
+  clog_sum <- summary(clogit)
+  clog_bic <- BIC(clogit)
+  clog_aic <- AIC(clogit)
+  clogdf <- data.frame(clog_sum[["coefficients"]])
+  clogdf <- cbind(clogdf, clog_sum[["conf.int"]])
+  clogdf <- clogdf[-c(3,4,6,7)]
+  clogdf <- (setattr(clogdf, "row.names", c("clog1")))
+  clogdf <- cbind(clogdf, clog_bic, clog_aic)
+  names(clogdf)[2]<-paste("IRR")
+  names(clogdf)[3]<-paste("p_value")
+  names(clogdf)[7]<-paste("AIC")
+  names(clogdf)[6]<-paste("BIC")
+  clog_CI <- confint(clogit)
+  clog_CI <- as.data.frame(clog_CI)
+  clog_CI <- (setattr(clog_CI, "row.names", c("clog1")))
+  clogdf <- cbind(clogdf, clog_CI)
+})
+df1 <- do.call("rbind", clogdf)
+row.names(df1) <- adm_data
+
+df1 <- rownames_to_column(df1, "Lag")
+df1 <- df1 %>% mutate(Lag = str_remove_all(Lag, "end"))
 
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 ## SUB-NATIONAL
+# Fit the models to the data for each exposure period and save output 
+data1 <- data1 %>% gather(exp_name, exp_end, 7:12)
+data1 <- data1 %>% mutate(df_name = paste(data1$Adm1, data1$exp_name, sep = "-"))
+
+adm_data <- unique(data1$df_name)
+adm_list <- data1 %>% group_split(Adm1, exp_name)
+names(adm_list) <- sapply(adm_list, function(x) x$df_name[1])
+
+clogdf <- lapply(adm_list, FUN = function(adm_data) {
+  datLong <- plyr::ddply(.data = adm_data,
+                         .variables = "indiv",
+                         .fun = function(df) {
+                           
+                           cuts <- with(df, sort(c(start, end, start1, exp_end))) 
+                           
+                           out <- data.frame(indiv = df$indiv,
+                                             exday = df$exday,
+                                             eventday = df$eventday,
+                                             start = head(cuts, -1),
+                                             end   = cuts[-1])
+                           
+                           out$event <- as.numeric(out$start <= df$eventday & df$eventday <= out$end)
+                           
+                           out$exgr <- as.numeric(df$start1 <= out$start & out$end <= df$exp_end)
+                           
+                           out$interval <- out$end - out$start
+                           out$loginterval <- log(out$interval)
+                           
+                           out
+                         })
+  datLong <- subset(datLong, start < 1220) 
+  datLong[datLong=="-Inf"]<-0
+  clogit <- clogit(event ~ exgr + strata(indiv) + offset(loginterval), data = datLong)
+  
+  clog_sum <- summary(clogit)
+  clog_bic <- BIC(clogit)
+  clog_aic <- AIC(clogit)
+  clogdf <- data.frame(clog_sum[["coefficients"]])
+  clogdf <- cbind(clogdf, clog_sum[["conf.int"]])
+  clogdf <- clogdf[-c(3,4,6,7)]
+  clogdf <- (setattr(clogdf, "row.names", c("clog1")))
+  clogdf <- cbind(clogdf, clog_bic, clog_aic)
+  names(clogdf)[2]<-paste("IRR")
+  names(clogdf)[3]<-paste("p_value")
+  names(clogdf)[7]<-paste("AIC")
+  names(clogdf)[6]<-paste("BIC")
+  clog_CI <- confint(clogit)
+  clog_CI <- as.data.frame(clog_CI)
+  clog_CI <- (setattr(clog_CI, "row.names", c("clog1")))
+  clogdf <- cbind(clogdf, clog_CI)
+})
+df1 <- do.call("rbind", clogdf)
+row.names(df1) <- adm_data
+
+df1 <- rownames_to_column(df1, "State")
+df1 <- separate(data = df1, col = State, into = c("State", "Lag"), sep = "-")
+df1 <- df1 %>% mutate(Lag = str_remove_all(Lag, "end"))
 
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
