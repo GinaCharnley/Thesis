@@ -1,5 +1,7 @@
-## Chapter 5 Figures
+## CHAPTER 5 - Figures Risk factors and responses for cholera outbreaks in conflict-affected Borno State, Nigeria 
+## DATA VISUALISATION
 
+# Packages 
 library(ggplot2)
 library(dplyr)
 library(sf)
@@ -7,12 +9,14 @@ library(maptools)
 library(ggspatial)
 library(ggpubr)
 
-# FIGURE 1
-
+# Fig. 1
 data("wrld_simpl")
+# https://thematicmapping.org/downloads/world_borders.php
+# License: CC BY-SA 3.0
 world_sf <- st_as_sf(wrld_simpl)
 worldNga <- subset(world_sf, NAME == 'Nigeria')
 nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
+# Same as other chapter 3 and 4
 
 p1 <- 
 ggplot() + geom_sf(data = worldNga) + geom_sf(data = subset(nga, admin1Name == "Borno"), aes(fill=admin1Name), lwd = 1) + 
@@ -29,6 +33,8 @@ ggplot() + geom_sf(data = worldNga) + geom_sf(data = subset(nga, admin1Name == "
 
 
 borno <- st_read("nga_admbnda_adm2_osgof_20170222.shp", stringsAsFactors = FALSE) 
+# https://data.humdata.org/dataset/nigeria-borno-operational-boundaries-admin-1-3-state-lga-ward-archived
+# License:  CC BY 3.0
 borno <- subset(borno, admin1Name == "Borno")
 data <- data.frame(borno$admin2Name)
 names(data)[1]<-paste("admin2Name")
@@ -66,7 +72,7 @@ ggplot() + geom_sf(data = borno) +
   annotation_scale(location = "br", bar_cols = c("grey60", "white"))  +
   geom_text(data = coords, aes(x, y, label = lga), size = 3, color = "black", fontface = "bold") 
 
-## FIGURE 2
+## Fig. 2
 ## A
 ggplot(responses, aes(x = reorder(Response, n), y = n)) + 
   geom_bar(stat = "identity", color = "#6f2b7f", fill = "#6f2b7f") + 
