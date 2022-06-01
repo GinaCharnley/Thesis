@@ -9,6 +9,7 @@ library(ggpubr)
 library(ggrepel)
 library(sf)
 library(cowplot)
+library(scales)
 
 # Fig. 1
 # Read in and format data
@@ -220,10 +221,10 @@ ggplot(swim_dat2) + geom_segment(aes(x=Adm1, xend=Adm1, y=exp_start, yend=exp_en
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5, face = "bold"),
         axis.text.y = element_text(face = "bold"),
         legend.title = element_text(size=15),
-        legend.text = element_text(face = "bold")) + guides(color = FALSE)
+        legend.text = element_text(face = "bold")) + guides(color = "none")
 # Join in cowplot to have shared x axis and legend
 legend_t <- get_legend(fig1 + theme(legend.position = "top"))     
-plot_grid(legend_b, fig3 + theme(axis.text.x = element_blank(),
+plot_grid(legend_t, fig3 + theme(axis.text.x = element_blank(),
                                  axis.ticks.x = element_blank(), 
                                  axis.title.x = element_blank()), 
         fig4, labels = c("","a","b"), ncol = 1, rel_heights = c(.1, 1, 1))
@@ -238,4 +239,16 @@ ggplot(nga) + geom_sf(aes(fill = IRR)) +
   scale_color_viridis_c(option = "magma", direction = -1)      
 # Repeat for COD
      
-  
+# Fig. 5
+results_nat <- read_excel("Data/SCCS/1997-2020, all new.xlsx", sheet = "nat_results")
+results_nat$Lag <- factor(results_nat$Lag, levels = c("1", "2", "4", "6", "8", "10"))
+ggplot(results_nat, aes(x = Lag, y = IRR, color = Country, fill = Country, ymin=IRR_CI_2.5, ymax=IRR_CI_97.5)) + 
+  geom_point(size = 4, position = position_dodge(width = 0.6)) +
+  scale_color_manual(values = c("#6E1E81FF", "#EE5B5EFF")) + 
+  theme_bw()  + 
+  theme(axis.text.x = element_text(face = "bold"),
+        axis.text.y = element_text(face = "bold"),
+        legend.title = element_text(size=15),
+        legend.text = element_text(face = "bold"),
+        legend.position = "top") + 
+  geom_errorbar(position = position_dodge(width = 0.6), width = 0.3, size = 3, alpha = 0.5)  
