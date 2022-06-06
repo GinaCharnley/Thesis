@@ -20,9 +20,14 @@ fig.2 <- subset(fig.2, UN != "10") # remove antarctica
 fig.2_and_data <- merge(fig.2, Region_map, by = "ISO3", all.x = TRUE)
 fig.2_and_data$Disaster_freq[is.na(fig.2_and_data$Disaster_freq)] = 0
 
-ggplot(fig.2_and_data) + geom_sf(aes(fill=Disaster_freq), lwd = 0) + 
+ggplot(fig.2_and_data) + geom_sf(aes(fill=Disaster_freq), lwd = 0.02) + 
   labs(fill = "Disaster Frequency") + 
-  scale_fill_viridis_c(option = "plasma", direction = -1) + theme_void()
+  scale_fill_distiller(palette = "Greens", direction = 1) + theme_void() +
+  geom_label_repel(data = subset(fig.2_and_data, Disaster_freq > 0), 
+                   aes(LON, LAT, label = ISO3), size = 3, max.overlaps = 200)  + 
+  theme(legend.title = element_text(face = "bold", size = 12),
+        legend.text = element_text(face = "bold", size = 12),
+        legend.position = "top",legend.key.size = unit(0.8, 'cm'))
 
 # Fig. 3, 5, 6 and 7a
 table.3a <- table(Region$Region,Region$Disaster_type)
