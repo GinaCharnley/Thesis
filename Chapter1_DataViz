@@ -11,6 +11,7 @@ library(reshape2)
 library(Hmisc)
 library(corrplot)
 library(ggdendro)
+library(ggpubr)
 
 # Fig. 2 
 fig.2 <- st_read("TM_WORLD_BORDERS-0.3.shp", stringsAsFactors = FALSE)
@@ -29,32 +30,85 @@ ggplot(fig.2_and_data) + geom_sf(aes(fill=Disaster_freq), lwd = 0.02) +
         legend.text = element_text(face = "bold", size = 12),
         legend.position = "top",legend.key.size = unit(0.8, 'cm'))
 
-# Fig. 3, 5, 6 and 7a
-table.3a <- table(Region$Region,Region$Disaster_type)
-Fig.3a <- as.data.frame.matrix(table.3a)
-Fig.3a$Region <- row.names(Fig.3a)
-Fig.3a <- melt(Fig.3a, id.vars=c("Region"), value.name = "Frequency")
-names(Fig.3a)[2]<-paste("Disaster")
-Fig.3a <- Fig.3a %>% mutate(Proportion = Frequency/sum(Frequency))
-Fig.3a <- Fig.3a %>% mutate(n = 137)
-Fig.3a <- Fig.3a %>% group_by(Region) %>% mutate(x = sum(Frequency))
-Fig.3a <- Fig.3a %>% mutate(Proportion2 = x/n)
-Fig.3a <- Fig.3a %>% mutate(Proportion_low = binconf(x,n)[,2], Proportion_high = binconf(x,n)[,3])
+# Fig. 3
+X3a <- read_excel("plot_data.xlsx", sheet = "freq_1")
+X3b <- read_excel("plot_data.xlsx", sheet = "freq_2")
+X3c <- read_excel("plot_data.xlsx", sheet = "freq_3")
 
-ggplot() + geom_bar(aes(y=Proportion,x=reorder(Region, -Proportion),fill=Disaster), data = Fig.3a, stat = "identity") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_fill_viridis_d() + 
-  xlab("Disease (n=140)") + ylab("Proportion") + 
-  geom_point(data=Fig.3a, mapping=aes(x=Region, y=Proportion2), size=1, shape=21, fill="white") + 
-  geom_errorbar(data=Fig.3a, aes(x=Region, ymin = Proportion_low, ymax = Proportion_high), width=0.2) 
+x3a <-
+ggplot(X3a, aes(x = reorder(Region, -prop), y = prop, color = Disaster, fill = Disaster)) + geom_bar(stat = "identity", position = "stack") + 
+  theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                     axis.text = element_text(face="bold", size = 10),
+                     axis.title = element_text(face = "bold", size = 12),
+                     legend.key.size = unit(1, 'cm'),
+                     legend.title = element_text(face = "bold", size = 12),
+                     legend.text = element_text(face = "bold", size = 12)) + 
+  scale_fill_viridis_d() + scale_color_viridis_d() + 
+  labs(x = "Region (n=137)", y= "Proportion") + 
+  geom_point(aes(x=Region, y=prop2), size=1.5, shape=21, fill="white", color="black") + 
+  geom_errorbar(aes(x=Region, ymin = Prop_low, ymax = Prop_high), width=0.4, color="black", size=1.5) 
+# Repeat for b and c 
+ggarrange(x3a,x3b,x3c,common.legend = TRUE)
 
 # Fig. 4
-table.4a <- ftable(Chi_2_CT$Region,Chi_2_CT$Disaster_type)
-table.4a <- as.table(as.matrix(table.4a))
-chisq.4a <- chisq.test(table.4a)
-corrplot(chisq.4a$residuals, is.cor = FALSE, tl.col = "black", tl.cex = 0.75, tl.srt = 45)
+corr_data <- read_excel("plot_data.xlsx", sheet = "Summary")
+table.1 <- ftable(Summary$Region,Summary$`Disaster Type`)
+table.1 <- as.table(as.matrix(table.1))
+chisq.1 <- chisq.test(table.1)
+corrplot(chisq.1$residuals, is.cor = FALSE, tl.col = "black", tl.cex = 0.75, tl.srt = 45)
+# Repeat for the other 2 variables 
 
-# Fig. 7b 
-Risks_total <- Risks_total %>% mutate(Proportion = Frequency/sum(Frequency))
-distances <- dist(Risks_total$Proportion)
-clusters <- hclust(distances)
-ggdendrogram(clusters, rotate = TRUE, size = 2)
+# Fig. 5
+risks1 <- read_excel("plot_data.xlsx", sheet = "risks_1")
+ggplot(risks1, aes(x = reorder(Risk, -prop), y = prop, color = Disaster, fill = Disaster)) + geom_bar(stat = "identity", position = "stack") + 
+  theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                     axis.text = element_text(face="bold", size = 10),
+                     axis.title = element_text(face = "bold", size = 12),
+                     legend.key.size = unit(1, 'cm'),
+                     legend.title = element_text(face = "bold", size = 12),
+                     legend.text = element_text(face = "bold", size = 12)) + 
+  scale_fill_viridis_d() + scale_color_viridis_d() +
+  labs(x = "Risk Factor", y= "Proportion") + 
+  geom_point(aes(x=Risk, y=prop2), size=1.5, shape=21, fill="white", color="black") + 
+  geom_errorbar(aes(x=Risk, ymin = Prop_low, ymax = Prop_high), width=0.4, color="black", size=1.5) 
+
+# Fig. 6
+risks2 <- read_excel("plot_data.xlsx", sheet = "risks_2")
+risks2$Cluster <- factor(risks2$Cluster, levels = c("WASH (n=59)","Housing (n=48)","Vector/Animal (n=39)","Age (n=40)","Healthcare (n=35)"))
+ggplot(risks2, aes(x = reorder(Risk, -prop), y = prop)) +   
+  geom_point(size=3, shape=21, color = "#3CBB75FF", fill = "#3CBB75FF") + 
+  geom_errorbar(aes(x=Risk, ymin = Prop_low, ymax = Prop_high), width=0.5, color = "#3CBB75FF", size=1.5, alpha=0.7) +
+  facet_wrap(~Cluster, scales = "free") + 
+  theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                     axis.text = element_text(face="bold", size = 10),
+                     axis.title = element_text(face = "bold", size = 12),
+                     strip.text.x = element_text(size = 12, face = "bold")) +
+  labs(y = "Proportion", x = "Risk Factor")
+
+# Fig. 7 
+# a
+risks3 <- read_excel("plot_data.xlsx", sheet = "risks_3")
+risks <- ggplot(risks3, aes(x = `No. of Risks Reported/Study`, y = Prop, color = Disaster, fill = Disaster)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  theme_bw() + theme(axis.text = element_text(face="bold", size = 10),
+                     axis.title = element_text(face = "bold", size = 12),
+                     legend.key.size = unit(0.5, 'cm'),
+                     legend.position = "top",
+                     legend.title = element_text(face = "bold", size = 10),
+                     legend.text = element_text(face = "bold", size = 8)) + 
+  scale_fill_viridis_d() + scale_color_viridis_d() +
+  labs(x = "No. of Risks Reported Per Study", y= "Proportion") 
+  
+# b
+risks4 <- read_excel("plot_data.xlsx", sheet = "risks_4")
+risks4 <- as.data.frame(risks4)
+row.names(risks4)<- risks4$Risk
+risks4$Risk <- NULL
+clusters <- hclust(dist(risks5), method = "complete")
+dendro <- ggdendrogram(clusters, rotate = TRUE, size = 2)
+
+ggarrange(risks,dendro,labels = c("a","b"))
+
+
+
+
