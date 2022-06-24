@@ -14,6 +14,8 @@ dat3 <- dat1 %>% mutate(bin = case_when(x <= 1000 ~ 1,
                                         x <= 10000 ~ 4,
                                         x <= 25000 ~ 5,
                                         x >= 25001 ~ 6))
+map3 <- merge(map, dat3, by = "ISO3", all.x = TRUE)
+map3$bin <- as.character(map3$bin)                                        
                                         
 ggplot(subset(map3, NAME != "Svalbard")) + geom_sf(aes(fill=bin), lwd = 0.08) + 
   labs(fill = "") + scale_fill_manual(values = c("white", "#edf8e9", "#bae4b3", "#74c476", "#238b45", "#00441B"), 
