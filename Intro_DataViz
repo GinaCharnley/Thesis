@@ -1,0 +1,22 @@
+## INTRODUCTION
+## DATA VISUALISATION
+
+# Packages 
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+
+# Fig. 1
+dat3 <- dat1 %>% mutate(bin = case_when(x <= 1000 ~ 1,
+                                        x <= 2500 ~ 2,
+                                        x <= 5000 ~ 3,
+                                        x <= 10000 ~ 4,
+                                        x <= 25000 ~ 5,
+                                        x >= 25001 ~ 6))
+                                        
+ggplot(subset(map3, NAME != "Svalbard")) + geom_sf(aes(fill=bin), lwd = 0.08) + 
+  labs(fill = "") + scale_fill_manual(values = c("white", "#edf8e9", "#bae4b3", "#74c476", "#238b45", "#00441B"), 
+                                         labels = c(0, 1000, 2500, 5000, 10000, 25000, "No data")) + 
+  theme_void() + guides(fill = guide_legend(keywidth = 5, keyheight = 5, nrow = 1,label.position = "bottom")) + 
+  theme(legend.position = "bottom", legend.text = element_text(face="bold", size=15))                                         
