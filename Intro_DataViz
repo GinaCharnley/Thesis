@@ -25,6 +25,13 @@ ggplot(subset(map3, NAME != "Svalbard")) + geom_sf(aes(fill=bin), lwd = 0.08) +
   theme(legend.position = "bottom", legend.text = element_text(face="bold", size=15))                                         
 
 # Fig. 1b
-ggplot(dat5, aes(x = Year, y = total, fill = Disease)) + geom_area() + theme_bw() + labs(y = "", x = "", fill = "") + 
-scale_y_continuous(breaks = c(0, 200000000, 400000000, 600000000, 800000000, 1000000000, 1200000000), 
-labels = c("0", "200 million", "400 million", "600 million", "800 million", "1 billion", "1.2 billion"))
+ggplot(dat5, aes(x = Year, y = total, fill = Disease)) + geom_area() + 
+  theme_bw() + labs(y = "", x = "", fill = "") + 
+  scale_y_continuous(breaks = c(0, 200000000, 400000000, 600000000, 800000000, 1000000000, 1200000000), 
+                     labels = c("0", "200 million", "400 million", "600 million", "800 million", 
+                                "1 billion", "1.2 billion")) + theme(axis.text.x = element_text(hjust = 1),
+                                                                     axis.text = element_text(face="bold", size = 10),
+                                                                     axis.title = element_text(face = "bold", size = 12),
+                                                                     legend.key.size = unit(1, 'cm'),
+                                                                     legend.title = element_text(face = "bold", size = 12),
+                                                                     legend.text = element_text(face = "bold", size = 12))
