@@ -8,10 +8,61 @@ library(survival)
 library(tidyr)
 library(tibble)
 library(tidyverse)
+library(mosaic)
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
 ## SCCS 
+# Check the Poisson distribution 
+# Nigeria 
+# Exp = 782
+# Admin1 = 38
+
+# DRC 
+# Exp = 396
+# Admin1 = 26
+
+# You have N provinces and a total of x events. 
+# Thus the rate of your Poisson process is lambda = x/N
+lambda <- 782/38
+lambda
+qpois(0.5, lambda) # 0.5 is your probability
+
+lambda <- 396/26
+lambda
+qpois(0.5, lambda)
+
+n_rep <- 10000
+
+tab_res=c(rep(NA, 165*n_rep)) # change to number of possible observations 
+dim(tab_res)= c(n_rep, 165) # change to number of possible observations 
+for (i in 1:n_rep){
+  vec = rpois(38, lambda) # number of admin1 
+  for (y in 1:165){ # change to number of possible observations 
+    tab_res[i, y] = table(vec)[y]
+  }
+}
+tab_res[is.na(tab_res)]=0
+quant = apply(tab_res, 2, quantile, probs = c(0.005, 0.995))
+quant2 = apply(tab_res, 2, median)
+
+Obs <- read_excel("~/Chapter 3 - SCCS/Data/SCCS/1997-2020, all new.xlsx", 
+                  sheet = "Poisson_obs")
+obs_nga <- as.numeric(Obs$Obs_nga)
+obs_cod <- as.numeric(Obs$Obs_cod)
+obs_cod <- na.omit(obs_cod)
+
+quant <- data.frame(t(quant))
+quant$Outreaks <- seq(1,165,1) # change second number to number of possible observations 
+quant <- cbind(quant, quant2)
+quant <- cbind(quant, obs_nga) # change depending on country 
+quant <- quant[c(3,5,4,1,2)]
+names(quant)[3]<-paste("exp")
+names(quant)[4]<-paste("low")
+names(quant)[5]<-paste("high") 
+
+# The distribution fits 
+
 # Load in data and format 
 outb <- read_excel("1997-2020, all new.xlsx", sheet = "outb_nga")
 conf <- read_excel("1997-2020, all new.xlsx", sheet = "conf_nga")                                                                                                            
@@ -291,8 +342,31 @@ paf <- paf %>% mutate(attri = (((Unexp_outb*Exp_total)/(Obs_period-Exp_total))*I
 # This is the total number of outbreaks in the Adm1 attributable to conflict 
 # This requires you attri number and the total number of outbreaks observed 
 paf <- paf %>% mutate(paf = attri/Event_total)
-write.csv(paf, "paf.csv")
 
+# Add a bootstrap confidence interval 
+atrib2 <- 
+  function(IRR) {
+    (((199*1104)/(1220-1104))*IRR-1) # the values in the equation need changing depending on country 
+  }
+
+p2 <- data.frame(atrib2(IRR = cod$IRR))
+names(p2)[1]<-paste("a")
+mean(p2$a)
+## [1] 3729.647
+boot2 <- do(1000) * mean(~a,data = resample(p2))
+histogram(~mean,data = boot2)
+## Middle of histogram should be around 21 
+se <- sd(~mean, data = boot2)
+confint(boot2, level = 0.95, method = "quantile")
+
+paf <- 
+  function(atrib) {
+    atrib/396
+  }
+paf2 <- data.frame(paf(atrib = boot2))
+sd(~mean, data = paf2)
+## [1] 2.061401
+# +/- this value to the median 
 
 
 
