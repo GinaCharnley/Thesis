@@ -89,7 +89,7 @@ data1$end6 <- data1$exday + 6
 data1$end8 <- data1$exday + 8
 data1$end10 <- data1$exday + 10 
 
-# Create am ID number of each outbreaks and conflict in each Adm1
+# Create an ID number of each outbreaks and conflict in each Adm1
 data1 <- data1  %>% 
   mutate(indiv = group_indices(., Adm1, exday, eventday)) 
 data1 <- data1 %>% distinct()
