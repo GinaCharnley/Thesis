@@ -81,7 +81,6 @@ data1$end <- 1220
 
 # Create exposure period
 data1$start1 <- data1$exday + 0 
-data1$end0 <- data1$exday + 0
 data1$end1 <- data1$exday + 1
 data1$end2 <- data1$exday + 2
 data1$end4 <- data1$exday + 4
@@ -89,14 +88,12 @@ data1$end6 <- data1$exday + 6
 data1$end8 <- data1$exday + 8
 data1$end10 <- data1$exday + 10 
 
-# Create an ID number of each outbreaks and conflict in each Adm1
+# Create an ID number of each exposure in each Adm1
 data1 <- data1  %>% 
-  mutate(indiv = group_indices(., Adm1, exday, eventday)) 
+  mutate(indiv = group_indices(., Adm1, exday)) 
 data1 <- data1 %>% distinct()
 
-
-## NATIONAL 
-# Fit the models to the data for each exposure period and save output 
+# Fit the model for each exposure period 
 data1 <- data1 %>% gather(exp_name, exp_end, 7:12)
 
 adm_data <- unique(data1$exp_name)
@@ -128,29 +125,18 @@ clogdf <- lapply(adm_list, FUN = function(adm_data) {
   datLong <- subset(datLong, start < 1220) 
   datLong[datLong=="-Inf"]<-0
   clogit <- clogit(event ~ exgr + strata(indiv) + offset(loginterval), data = datLong)
-  
-  clog_sum <- summary(clogit)
-  clog_bic <- BIC(clogit)
-  clog_aic <- AIC(clogit)
-  clogdf <- data.frame(clog_sum[["coefficients"]])
-  clogdf <- cbind(clogdf, clog_sum[["conf.int"]])
-  clogdf <- clogdf[-c(3,4,6,7)]
-  clogdf <- (setattr(clogdf, "row.names", c("clog1")))
-  clogdf <- cbind(clogdf, clog_bic, clog_aic)
-  names(clogdf)[2]<-paste("IRR")
-  names(clogdf)[3]<-paste("p_value")
-  names(clogdf)[7]<-paste("AIC")
-  names(clogdf)[6]<-paste("BIC")
-  clog_CI <- confint(clogit)
-  clog_CI <- as.data.frame(clog_CI)
-  clog_CI <- (setattr(clog_CI, "row.names", c("clog1")))
-  clogdf <- cbind(clogdf, clog_CI)
+  clogdf <- data.frame(clog_sum[["coefficients"]]) 
+  clogdf <- cbind(clogdf, clog_sum[["conf.int"]]) 
+  clogdf <- clogdf[-c(1,3,4,6,7)] 
 })
+  
 df1 <- do.call("rbind", clogdf)
-row.names(df1) <- adm_data
-
 df1 <- rownames_to_column(df1, "Lag")
 df1 <- df1 %>% mutate(Lag = str_remove_all(Lag, "end"))
+names(df1)[2]<-paste("IRR")
+names(df1)[3]<-paste("p_value")
+names(df1)[4]<-paste("IRR_low")
+names(df1)[5]<-paste("IRR_high")
 
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
@@ -189,30 +175,19 @@ clogdf <- lapply(adm_list, FUN = function(adm_data) {
   datLong <- subset(datLong, start < 1220) 
   datLong[datLong=="-Inf"]<-0
   clogit <- clogit(event ~ exgr + strata(indiv) + offset(loginterval), data = datLong)
-  
-  clog_sum <- summary(clogit)
-  clog_bic <- BIC(clogit)
-  clog_aic <- AIC(clogit)
-  clogdf <- data.frame(clog_sum[["coefficients"]])
-  clogdf <- cbind(clogdf, clog_sum[["conf.int"]])
-  clogdf <- clogdf[-c(3,4,6,7)]
-  clogdf <- (setattr(clogdf, "row.names", c("clog1")))
-  clogdf <- cbind(clogdf, clog_bic, clog_aic)
-  names(clogdf)[2]<-paste("IRR")
-  names(clogdf)[3]<-paste("p_value")
-  names(clogdf)[7]<-paste("AIC")
-  names(clogdf)[6]<-paste("BIC")
-  clog_CI <- confint(clogit)
-  clog_CI <- as.data.frame(clog_CI)
-  clog_CI <- (setattr(clog_CI, "row.names", c("clog1")))
-  clogdf <- cbind(clogdf, clog_CI)
+  clogdf <- data.frame(clog_sum[["coefficients"]]) 
+  clogdf <- cbind(clogdf, clog_sum[["conf.int"]]) 
+  clogdf <- clogdf[-c(1,3,4,6,7)] 
 })
-df1 <- do.call("rbind", clogdf)
-row.names(df1) <- adm_data
 
+df1 <- do.call("rbind", clogdf)
 df1 <- rownames_to_column(df1, "State")
 df1 <- separate(data = df1, col = State, into = c("State", "Lag"), sep = "-")
 df1 <- df1 %>% mutate(Lag = str_remove_all(Lag, "end"))
+names(df1)[2]<-paste("IRR")
+names(df1)[3]<-paste("p_value")
+names(df1)[4]<-paste("IRR_low")
+names(df1)[5]<-paste("IRR_high")
 
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
