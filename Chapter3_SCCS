@@ -90,7 +90,7 @@ data1$end10 <- data1$exday + 10
 
 # Create an ID number of each exposure in each Adm1
 data1 <- data1  %>% 
-  mutate(indiv = group_indices(., Adm1, exday)) 
+  mutate(indiv = group_indices(., Adm1, exday, eventday)) 
 data1 <- data1 %>% distinct()
 
 # Fit the model for each exposure period 
