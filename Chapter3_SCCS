@@ -142,6 +142,45 @@ names(df1)[5]<-paste("IRR_high")
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
+## SENSITIVITY ANALYSIS FOR OUTBREAK DEFINITION 
+
+# Scenario 1 - Remove all outbreaks within 2 weeks of each other 
+# Scenario 2 - Remove all outbreaks within 3 weeks of each other 
+# Scenario 3 - Remove all outbreaks within 8 weeks of each other 
+# Scenario 4 - Remove all outbreaks within 28 weeks of each other 
+
+outb <- outb[c(3,10)]
+conf <- conf[c(2,10)]
+names(outb)[2]<-paste("eventday")
+names(conf)[2]<-paste("exday")
+outb <- outb %>% distinct()
+conf <- conf %>% distinct()
+
+# Remove events depending on the sensitivity scenario 
+outb <- outb[with(outb, order(Adm1, eventday)), ]
+gap = 2 # changing according to the scenario 
+
+outb <- outb %>% group_by(Adm1) %>% mutate(outbreak_gap = eventday - lag(eventday))
+outb[is.na(outb)] <- 1000 # this is a unique number to identify the first outbreak/province 
+
+outb <- outb %>% group_by(Adm1) %>% mutate(eventday1 = 
+  case_when(outbreak_gap == 1000 ~ eventday,
+            outbreak_gap > gap ~ eventday))
+
+outb <- outb[-c(2,3)]
+outb <- na.omit(outb)
+names(outb)[2]<-paste("eventday")
+
+# Merge the new outbreak dataframe with the conflict data 
+data1 <- merge(outb, conf, by = "Adm1", all = TRUE)
+data1 <- na.omit(data1)
+
+# Fit this as normal to the national model 
+# Repeat for each country and all four scenarios 
+
+
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
 ## SUB-NATIONAL
 # Fit the models to the data for each exposure period and save output 
 data1 <- data1 %>% gather(exp_name, exp_end, 7:12)
