@@ -47,8 +47,9 @@ ggplot(nga) + geom_sf() + geom_point(aes(x=lon, y=lat, size=conf_events, color=c
 # https://data.humdata.org/dataset/nga-administrative-boundaries
 # License: CC BY-IGO
   
-# Join both countries together and set the legend to the top 
-ggarrange(p1, p2, legend.position = "top")
+# Join both countries together 
+p3 <- ggarrange(p1,p2,ncol=1,labels=c("a","b"))
+p3 + ggtitle("COD") + theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 15))
 
 # Fig. 2
 # Read in data 
