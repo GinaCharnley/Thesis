@@ -34,9 +34,12 @@ ggplot(Fig1b-nga, aes(x = Date, y = Events, size = Fatalities)) +
 nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
 nga <- merge(nga, Fig1c-nga, by = "admin1Name", all.x = TRUE)
 ggplot(nga) + geom_sf() + geom_point(aes(x=lon, y=lat, size=conf_events, color=cholera_prop)) + 
-  geom_label_repel(aes(lon, lat, label = admin1Name), size = 3) + theme_void() + 
-  scale_color_viridis_c(option = "magma", direction = -1) + 
-  labs(color = "Cholera Cases (%)", size = "Conflict Events")   
+ geom_label_repel(aes(lon, lat, label = admin1Name), size = 3.5) + theme_void() + 
+ scale_color_viridis_c(option = "magma", direction = -1) + 
+ labs(color = "Cholera Cases (%)", size = "Conflict Events") + scale_size_continuous(breaks = c(500,1000,1500,2000)) + 
+  theme(legend.position="bottom", 
+        legend.title = element_text(size=12,face = "bold"),
+        legend.text = element_text(face = "bold"))
 # https://data.humdata.org/dataset/drc-administrative-boundaries-levels-0-2
 # https://data.humdata.org/dataset/nga-administrative-boundaries
 # License: CC BY-IGO
