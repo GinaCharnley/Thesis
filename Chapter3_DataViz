@@ -15,22 +15,25 @@ library(scales)
 # Read in and format data
 Fig1a-nga <- read.xls(chap3_plots, sheets = "Fig1a-nga")
 Fig1b-nga <- read.xls(chap3_plots, sheets = "Fig1b-nga")
-Fig1c-nga <- read.xls(chap3_plots, sheets = "Fig1c-nga")
 # repeat all for COD
 
 # 1a
-ggplot(Fig1a-nga, aes(y = n, x = Year, color = Cholera, fill = Cholera)) + 
-  geom_bar(stat = "identity", position = "stack") + theme_bw() + 
-  labs(y = "Annual Cases/Deaths") + 
-  scale_color_manual(values = c("#AB337CFF", "#FD9A6AFF")) + 
-  scale_fill_manual(values = c("#AB337CFF", "#FD9A6AFF"))
-  
-# 1b
-ggplot(Fig1b-nga, aes(x = Date, y = Events, size = Fatalities)) + 
-  geom_point(color = "#AB337CFF") + theme_bw() + 
-  labs(y = "Monthly Event Frequency", size = "Monthly Fatalities")
+ggplot(nga_dat) + geom_bar(aes(x = Date, y = n/coeff, fill = Cholera, color = Cholera), 
+                           stat = "identity", position = "stack") + 
+  geom_point(aes(x = Date, y = Events, size = Fatalities), alpha = .4) +  
+  scale_y_continuous(name = "Monthly Conflict Frequency", sec.axis = 
+                       sec_axis(~.*coeff, name="Monthly Cholera Cases/Deaths", breaks = seq(0,150000,25000))) + 
+  theme_bw() + scale_color_manual(values = c("#872CA2", "#F6A97A")) + 
+  scale_fill_manual(values = c("#872CA2", "#F6A97A")) + 
+  theme(legend.position="bottom", 
+        legend.title = element_text(size=12,face = "bold"),
+        legend.text = element_text(face = "bold"),
+        axis.text.x = element_text(face = "bold"),
+        axis.text.y = element_text(face = "bold"),
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"))
  
-# 1c
+# 1b
 nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
 nga <- merge(nga, Fig1c-nga, by = "admin1Name", all.x = TRUE)
 ggplot(nga) + geom_sf() + geom_point(aes(x=lon, y=lat, size=conf_events, color=cholera_prop)) + 
