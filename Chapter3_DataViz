@@ -56,11 +56,17 @@ p3 + ggtitle("COD") + theme(plot.title = element_text(hjust = 0.5, face = "bold"
 fig2a_nga <- read.xls(chap3_plots, sheets = "Fig2-nga")
 # repeat for COD
 
-ggplot(fig2a, aes(x = reorder(Adm1, n), y = n, color = Dataset, fill = Dataset)) + 
+ggplot(fig2a_nga, aes(x = reorder(Adm1, n), y = n, color = Dataset, fill = Dataset)) + 
   geom_bar(stat = "identity", position = "dodge") + theme_bw() + 
   labs(x = "State", y = "Percentage of Total Events") + 
   scale_color_manual(values = c("#872CA2", "#F6A97A")) + 
-  scale_fill_manual(values = c("#872CA2", "#F6A97A")) + coord_flip()
+  scale_fill_manual(values = c("#872CA2", "#F6A97A")) + coord_flip()+ theme(legend.position="top", 
+                                                                                 legend.title = element_text(size=12,face = "bold"),
+                                                                                 legend.text = element_text(face = "bold"),
+                                                                                 axis.text.x = element_text(face = "bold"),
+                                                                                 axis.text.y = element_text(face = "bold"),
+                                                                                 axis.title.x = element_text(face = "bold"),
+                                                                                 axis.title.y = element_text(face = "bold"))
   
 # Fig. 3
 # Read in and format the swimmer plot data 
