@@ -36,11 +36,12 @@ ggplot(map_s1_2030) + geom_sf(aes(fill=s1_2030), lwd = 0) +
 # S3 palette: "Blues"
 
 # Fig. 4
-ggplot(outbreak_proj, aes(y = outbreak_proj, x = Year, fill = Scenario, color = Scenario)) + 
-  geom_point() + geom_smooth(se = TRUE) + theme_bw() + 
-  labs(y = "Cholera Outbreak Occurance Projections") + 
-  scale_color_manual(values = c("#5fa54b", "#f19d3b", "#5fa9dc") + 
-  scale_fill_manual(values = c("#5fa54b", "#f19d3b", "#5fa9dc")
+ggplot(summary_proj, aes(y = Outbreak_pred, x = Year, fill = Scenario, color = Scenario)) + geom_point(size = 3) + 
+  geom_smooth(method = "lm", se = TRUE) + theme_bw() + labs(y = "Cholera Outbreak Occurance Projections") + 
+  scale_color_manual(values = c("#5fa54b", "#f19d3b", "#5fa9dc")) + scale_fill_manual(values = c("#5fa54b", "#f19d3b", "#5fa9dc")) + 
+  theme(legend.key.size = unit(1, 'cm'), legend.text = element_text(size=12, face = "bold"), 
+  legend.title = element_text(size=12, face = "bold"), axis.text = element_text(face="bold", size = 10),
+  axis.title = element_text(face="bold", size = 10),legend.position = "top")
 
 
 
