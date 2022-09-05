@@ -59,7 +59,10 @@ ggplot(var_importance, aes(x = reorder(Covariate, Importance), y = Importance,
   geom_bar(stat = "identity", position = "dodge") + theme_bw() + coord_flip() + labs(x = "") + 
   scale_color_manual(values = c("#e3a0ba", "#de497b", "#a44664")) + 
   scale_fill_manual(values = c("#e3a0ba", "#de497b", "#a44664")) + 
-  theme(legend.position = "top", axis.text = element_text(face="bold", size = 10)) +
+  theme(legend.position = "top", 
+  axis.text = element_text(face="bold", size = 10),
+  legend.text = element_text(face = "bold"),
+  legend.title = element_text(face = "bold")) +
   geom_text(aes(label=Cluster), color = "black", hjust = -2, fontface = 2)
 
 # Fig. 4
