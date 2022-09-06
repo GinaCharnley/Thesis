@@ -1,0 +1,93 @@
+## Fitting the models and projecting with bootstrap confidence intervals 
+
+library(dplyr)
+library(mosaic)
+library(plyr)
+library(rsample) 
+library(caret)
+
+# GLM
+fit_dat <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
+                      sheet = "fit_data2")
+fit <- glm(Outbreak ~ Mean_drought + withdrawal_percap + Avg_temp + Population_log + Poverty_headcount,
+           data = fit_dat, family = binomial)
+
+scen_data <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
+                       sheet = "scen_data2")                                                                                                                       
+Scenario <- scen_data$Scenario
+Year <- scen_data$Year
+scen_data <- scen_data[-c(1:2)]
+predictions <- predict(fit, scen_data, type = "response")
+preds <- data.frame(Scenario, Year, predictions)
+scen_data <- unique(preds$Scenario)
+scen_list <- preds %>% group_split(Scenario)
+
+boot_scen <- function(scen_data) {
+  boot <- do(10000) * mean(~Projection,data = resample(scen_data))
+  confint(boot, level = 0.95, method = "quantile")
+}
+output_list <- lapply(scen_list, boot_scen)
+confs <- ldply(output_list, data.frame)
+confs <- confs %>% mutate(low = estimate-lower)
+confs <- confs %>% mutate(high = upper-estimate)
+confs <- cbind(confs, scen_data)
+confs <- confs[c(9,7,8)]
+names(confs)[1]<-paste("Scenario")
+preds <- merge(preds, confs, by = "Scenario", all.x = TRUE)
+preds <- preds %>% mutate(lower = predictions-low)
+preds <- preds %>% mutate(upper = predictions+high)
+preds <- preds[-c(4,5)]
+
+# RF
+fit_dat <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
+                  sheet = "fit_data4")
+set.seed(123)
+split <- initial_split(fit_dat, prop = .7)
+train <- training(split)
+test  <- testing(split)
+
+control <- trainControl(method='repeatedcv', 
+                        number=10, 
+                        repeats=5,
+                        returnResamp = "final",
+                        allowParallel = FALSE)
+best_fit <- train(Rt5 ~ Sanitation + MPI + PDSI + monthly_conf, 
+                  data=train, 
+                  method='rf', 
+                  metric= "RMSE", 
+                  trControl=control)
+
+scen_dat <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
+                  sheet = "scen_data4")
+
+preds <- as.numeric(predict(best_fit, data.frame(monthly_conf=scen_dat$Conflict, 
+                                      PDSI=scen_dat$PDSI, 
+                                      Sanitation=scen_dat$Sanitation, 
+                                      MPI=scen_dat$MPI)))
+preds_df <- data.frame(scen_dat$State, scen_dat$Year, scen_dat$Scenario, preds)
+names(preds_df)[1]<-paste("State")
+names(preds_df)[2]<-paste("Year")
+names(preds_df)[3]<-paste("Scenario")
+
+preds <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
+                       sheet = "proj4")
+preds$StateScen <- paste(preds$State, preds$Scenario)
+scen_data <- unique(preds$StateScen)
+scen_list <- preds %>% group_split(StateScen)
+names(scen_list) <- scen_data 
+
+boot_scen <- function(scen_data) {
+  boot <- do(10000) * mean(~Projections,data = resample(scen_data))
+  confint(boot, level = 0.95, method = "quantile")
+}
+output_list <- lapply(scen_list, boot_scen)
+confs <- ldply(output_list, data.frame)
+confs <- confs %>% mutate(low = estimate-lower)
+confs <- confs %>% mutate(high = upper-estimate)
+confs <- confs[c(1,8,9)]
+names(confs)[1]<-paste("StateScen")
+preds <- merge(preds, confs, by = "StateScen", all.x = TRUE)
+preds <- preds %>% mutate(lower = Projections-low)
+preds <- preds %>% mutate(upper = Projections+high)
+preds <- preds[-c(1,8,9)]
+
