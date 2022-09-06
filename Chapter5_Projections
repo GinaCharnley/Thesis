@@ -1,11 +1,20 @@
-## Fitting the models and projecting with bootstrap confidence intervals 
+## CHAPTER 5 - Cholera past and future in Nigeria: are the 2030 targets achievable?
+## TIME-SERIES, ARIMA, ACF, PROJECTIONS 
 
+# Load packages 
+# Data manipulation
 library(dplyr)
 library(mosaic)
 library(plyr)
+# Model fitting
 library(rsample) 
 library(caret)
 
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
+## PROJECTIONS
+
+## National
 # GLM
 fit_dat <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
                       sheet = "fit_data2")
@@ -38,6 +47,7 @@ preds <- preds %>% mutate(lower = predictions-low)
 preds <- preds %>% mutate(upper = predictions+high)
 preds <- preds[-c(4,5)]
 
+## Sub-National
 # RF
 fit_dat <- read_excel("Library/Mobile Documents/com~apple~CloudDocs/Downloads/Chapter 5 - 2030 Projections/Book1.xlsx", 
                   sheet = "fit_data4")
