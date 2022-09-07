@@ -6,9 +6,41 @@
 library(dplyr)
 library(mosaic)
 library(plyr)
+# Format date
+library(lubridate)
+# ARIMA
+library(forecast)
+library(tseries)
 # Model fitting
 library(rsample) 
 library(caret)
+
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
+## HISTORICAL ANALYSIS
+
+# Import data 
+chol1 <- read.csv("chol_who.csv")
+chol2 <- read.csv("chol_gbd.csv") 
+
+# Create a time-series object
+chol1 <- chol1[order(as.Date(chol1$Date, format="%d/%m/%Y")),]
+chol2 <- chol2[order(as.Date(chol2$Date, format="%d/%m/%Y")),]
+chol1$time <- seq(1,45,1)
+chol2$time <- seq(1,28,1)
+mts1 <- ts(chol1$deaths, start = 1, end = 45, frequency = 1)
+mts2 <- ts(chol2$deaths, start = 1, end = 28, frequency = 1)
+
+# Forecast using ARIMA
+fit1 <- auto.arima(mts1)
+fit2 <- auto.arima(mts2)
+p1 <- plot(forecast(fit1, 15))
+p2 <- plot(forecast(fit2, 15))
+
+# ACF 
+acfRes <- acf(mts1)
+pacfRes <- pacf(mts1) 
+
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
