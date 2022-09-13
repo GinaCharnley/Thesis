@@ -4,6 +4,7 @@
 # Packages 
 library(sf)
 library(ggplot2)
+library(ggrepel)
 library(dplyr)
 library(viridis)
 library(sjPlot)
@@ -43,6 +44,16 @@ ggplot(summary_proj, aes(y = Outbreak_pred, x = Year, fill = Scenario, color = S
   legend.title = element_text(size=12, face = "bold"), axis.text = element_text(face="bold", size = 10),
   axis.title = element_text(face="bold", size = 10),legend.position = "top")
 
-
+# Water Security Plot
+ggplot(Water_security, aes(x = log_with, y = log_res, color = Code)) + 
+  geom_point(size = 3) + 
+  geom_text_repel(aes(x = log_with, y = log_res, label = Code), 
+                  show.legend  = FALSE, fontface = "bold", size = 5) + 
+  scale_color_viridis_d() + theme_bw() + 
+  geom_vline(xintercept = 5.926926, linetype="dashed", color = "red", size=1, alpha = .8) + 
+  labs(x = expression(bold(paste("National Average Freshwater Withdrawal in log.", m^{3}))),
+       y = expression(bold(paste("National Average Freshwater Resource in log.", m^{3})))) + 
+  theme(legend.position = "none",
+        text = element_text(face = "bold"))
 
 
