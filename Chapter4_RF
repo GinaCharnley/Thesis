@@ -5,6 +5,7 @@
 # R
 library(incidence)
 library(EpiEstim) 
+library(sars2pack)
 # Data manipulation
 library(data.table)
 library(plyr)
