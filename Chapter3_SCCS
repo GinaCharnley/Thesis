@@ -139,6 +139,8 @@ names(df1)[3]<-paste("p_value")
 names(df1)[4]<-paste("IRR_low")
 names(df1)[5]<-paste("IRR_high")
 
+# When comparing gnm to clogit, this was the function for gnm 
+gnm(event ~ exgr + offset(loginterval), data = chopdat, family = poisson(link = "log"), eliminate = indiv)
 
 `````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
 
