@@ -154,10 +154,11 @@ names(var_importance)[2]<-paste("x")
 
 # Find optimum parameters 
 # Optimum ntree 
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="grid")
 tunegrid <- expand.grid(.mtry = c(sqrt(ncol(train))))
 modellist <- list()
 
-for (ntree in c(500,1000,1500,2000,2500)){
+for (ntree in c(50,100,500,1000,1500,2000)){
   set.seed(123)
   fit <- train(Rt5~.,
                data = train,
@@ -172,11 +173,14 @@ for (ntree in c(500,1000,1500,2000,2500)){
 
 results <- resamples(modellist)
 summary(results)
+dotplot(results)
+# Optimum = 100
 
 # Optimum mtry 
 control2 <- trainControl(method="boot", number=100)
 boot <- train(Rt5 ~ ., data=train, trControl=control2, method="rf")
 print(boot)
+# Optimum = 2
 
 # Fit best-fit model 
 # Stepping through model possibilities, shown was the best fit accroding to RMSE, R2 and correlations 
