@@ -8,6 +8,32 @@ library(sf)
 library(tidyr)
 library(dplyr)
 
+# Historical Data 
+chol3 <- read.csv("chol_total.csv")
+
+# Fig.2 (as a bar chart)
+ggplot(chol3, aes(x = Year, y = per_100000, color = Data, fill = Data)) + 
+  geom_bar(stat = "identity", position = "dodge") + theme_bw() + 
+  scale_fill_manual(values = c("#74C476", "#9E9AC8", "#FD8D3C")) + 
+  scale_color_manual(values = c("#74C476", "#9E9AC8", "#FD8D3C")) +
+  labs(x = "Year", y = "Cholera Deaths per 100,000", fill = "", color = "") +
+  theme(legend.key.size = unit(0.8, 'cm'), 
+        legend.text = element_text(size=12, face = "bold"), 
+        axis.text = element_text(face="bold", size = 10),
+        axis.title = element_text(face="bold", size = 10),
+        legend.position = "top")
+
+# Fig.2 (as a line chart)        
+ggplot(chol3, aes(x = Year, y = per_100000, color = Data)) + 
+  geom_line(size = 1) + theme_bw() + 
+  scale_color_manual(values = c("#74C476", "#9E9AC8", "#FD8D3C")) +
+  labs(x = "Year", y = "Cholera Deaths per 100,000", color = "") +
+  theme(legend.key.size = unit(0.8, 'cm'), 
+        legend.text = element_text(size=12, face = "bold"), 
+        axis.text = element_text(face="bold", size = 10),
+        axis.title = element_text(face="bold", size = 10),
+        legend.position = "top")        
+
 # Projection Data 
 proj2 <- read_excel("Chapter 5 - 2030 Projections/Book1.xlsx", sheet = "proj2")
 proj4 <- read_excel("Chapter 5 - 2030 Projections/Book1.xlsx", sheet = "proj4")
