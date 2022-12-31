@@ -13,13 +13,26 @@ library(RColorBrewer)
 
 # Fig. 2
 # Marginal effect plots
-plot1 <- plot_model(fit, type = "pred", title = "", terms = "Mean_drought") + xlab("Mean Drought")
-plot2 <- plot_model(fit, type = "pred", title = "", terms = "Avg_temp") + xlab("Average Temperature")
-plot3 <- plot_model(fit, type = "pred", title = "", terms = "Population_log") + xlab("Population (log)")
-plot4 <- plot_model(fit, type = "pred", title = "", terms = "Poverty_headcount") + xlab("Poverty Headcount (<$1.90/day)")
-plot5 <- plot_model(fit, type = "pred", title = "", terms = "withdrawal_percap") + xlab("Water Withdrawal (PerCapita)")
+range(dat1$Mean_drought)
+x <- seq(-7,6, 1) 
+y <- predict(fit, list(Mean_drought = x, 
+                       withdrawal_percap = rep(137.4343, 14),
+                       Poverty_headcount = rep(40.90929, 14),
+                       Avg_temp = rep(24.27677, 14),
+                       Population_log = rep(4.00169, 14)), 
+             type = "response", se.fit=TRUE, interval="confidence", level=0.95)
 
-ggarrange(plot1, plot2, plot3, plot4, plot5, ncol = 2, nrow = 3, labels = c("a","b","c","d","e"))
+y <- data.frame(y$fit, y$se.fit)
+
+p1 <- 
+ggplot() + geom_line(aes(x = x, y = y$y.fit), size = 1) + 
+  geom_line(aes(x = x, y = y$y.fit-y$y.se.fit),linetype = "dashed", color = "#d63e6c", size = .7, alpha = .7) + 
+  geom_line(aes(x = x, y = y$y.fit+y$y.se.fit),linetype = "dashed", color = "#d63e6c", size = .7, alpha = .7) + 
+  theme_bw() + labs(y = "Cholera Outbreak Occurance", x = "Mean Drought (PDSI)") + 
+  theme(text = element_text(face = "bold"))
+
+# Repeat for the other covariates 
+# Values are dataset means 
 
 # Fig 3
 # Subset projections for 2030, S1 
