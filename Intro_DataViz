@@ -15,6 +15,7 @@ dat3 <- dat1 %>% mutate(bin = case_when(x <= 1000 ~ 1,
                                         x <= 10000 ~ 4,
                                         x <= 25000 ~ 5,
                                         x >= 25001 ~ 6))
+map <- st_read("TM_WORLD_BORDERS-0.3.shp", stringsAsFactors = FALSE) 
 map3 <- merge(map, dat3, by = "ISO3", all.x = TRUE)
 map3$bin <- as.character(map3$bin)                                        
                                         
