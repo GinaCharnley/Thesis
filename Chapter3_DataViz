@@ -11,6 +11,8 @@ library(sf)
 library(cowplot)
 library(scales)
 
+coeff <- 400
+
 # Fig. 1
 # Read in and format data
 Fig1a-nga <- read.xls(chap3_plots, sheets = "Fig1a-nga")
@@ -18,7 +20,7 @@ Fig1b-nga <- read.xls(chap3_plots, sheets = "Fig1b-nga")
 # repeat all for COD
 
 # 1a
-ggplot(nga_dat) + geom_bar(aes(x = Date, y = n/coeff, fill = Cholera, color = Cholera), 
+ggplot(nga1a) + geom_bar(aes(x = Date, y = n/coeff, fill = Cholera, color = Cholera), 
                            stat = "identity", position = "stack") + 
   geom_point(aes(x = Date, y = Events, size = Fatalities), alpha = .4) +  
   scale_y_continuous(name = "Monthly Conflict Frequency", sec.axis = 
@@ -26,12 +28,16 @@ ggplot(nga_dat) + geom_bar(aes(x = Date, y = n/coeff, fill = Cholera, color = Ch
   theme_bw() + scale_color_manual(values = c("#872CA2", "#F6A97A")) + 
   scale_fill_manual(values = c("#872CA2", "#F6A97A")) + 
   theme(legend.position="bottom", 
-        legend.title = element_text(size=12,face = "bold"),
-        legend.text = element_text(face = "bold"),
+        legend.title = element_text(size=14,face = "bold"),
+        legend.text = element_text(size=12, face = "bold"),
+        legend.key.size = unit(1.5, 'cm'), 
+        legend.key.height = unit(1.5, 'cm'), 
+        legend.key.width = unit(1.5, 'cm'),
         axis.text.x = element_text(face = "bold"),
         axis.text.y = element_text(face = "bold"),
         axis.title.x = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"))
+        axis.title.y = element_text(face = "bold")) + 
+  scale_size_binned(range = c(0,12))
  
 # 1b
 nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
