@@ -66,14 +66,12 @@ ggplot(var_importance, aes(x = reorder(Covariate, Importance), y = Importance,
   geom_text(aes(label=Cluster), color = "black", hjust = -2, fontface = 2)
 
 # Fig. 4
-ggplot(pred_m3, aes(x = R, y = pred_m3))+ geom_point(color = "#56ae6c", size = 3) + theme_bw() + 
+ggplot(corr_results, aes(x = R, y = pred_m3))+ geom_point(color = "#56ae6c", size = 3) + theme_bw() + 
   labs(x = "Incidence-based R Values", y = "Covariate-based R Values") + xlim(0.5,2.5) + ylim(0,3) +
   geom_errorbar(aes(ymin=pred_m3-error, ymax=pred_m3+error), 
-                width=.03, size=.8, alpha=.6) + geom_abline(slope = 1, intercept = 0) +
-  annotate("text", x = 1, y=2.25, label= "RMSE = 0.33", size = 5) + 
-  annotate("text", x = 1, y=2.5, label= "Correlation = 0.87", size = 5) +
-  annotate("text", x = 1, y=2, label = lb3, parse = TRUE, size = 5) +
-  theme(axis.text = element_text(face="bold", size = 10))
+                width=.03, size=.8, alpha=.6) + geom_abline(slope = 1, intercept = 0) + 
+  theme(axis.text = element_text(face="bold", size = 10),
+        axis.title = element_text(face="bold", size = 10))
 
 # Fig. 5
 df1 <- read_excel("predvactual_r_averages.xlsx")
