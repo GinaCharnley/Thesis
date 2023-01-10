@@ -278,182 +278,53 @@ write.xlsx(output_list, file = "R_preds_by_state.xlsx")
 
 ## TRAFFIC-LIGHT SYSTEM  
 
-# Find the histroical averages spatially and temporally 
-# Read in all my data for the 31 states 
-filename <- "hist_exp_periods.xlsx"
-read_excel_allsheets <- function(filename, tibble = FALSE) {
-  sheets <- readxl::excel_sheets(filename)
-  x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
-  if(!tibble) x <- lapply(x, as.data.frame)
-  names(x) <- sheets
-  x
-}
-list1 <- read_excel_allsheets(filname)
-df1 <- ldply(list1, data.frame)
-df1$.id <- NULL
-
-## Create a new column for the threshold 
-df1 <- df1 %>% mutate(R_threshold = case_when(
-  R >= 1 ~ "R >= 1", 
-  R <= 1 ~ "R <= 1"
+# From the dataset used to fit the model, split this by R over and under 1 
+df2 <- df1 %>% mutate(R_threshold = case_when(
+  Rt5 >= 1 ~ "Rt >= 1", 
+  Rt5 <= 1 ~ "Rt < 1"
 ))
 
-## Subset my data based on the thresholds 
-df2 <- subset(df1, R_threshold == "R >= 1") 
-df3 <- subset(df1, R_threshold == "R <= 1") 
+# Find all the mean values for R >= 1
+mean(df2$PDSI)
 
-## Get summary stats 
-covariates <- c("Sanitation", "MPI", "monthly_conf", "PDSI")
-list2 <- list(df2$Sanitation, df2$MPI, df2$monthly_conf, df2$PDSI)
-names(list2) <- covariates
-list3 <- list(df3$Sanitation, df3$MPI, df3$monthly_conf, df3$PDSI)
-names(list3) <- covariates
+R >= 1
+Sanitation = 43.64327
+PDSI = 0.2192958
+Conflict = 7.152047
+MPI =  0.3884532
 
-stats_fun <- function(covariates) {
-  stats <- describe(covariates)
-}
+# Find a range of values of each to predict 
+range(df2$PDSI)
 
-output_over_1 <- lapply(list2, stats_fun)
-output_under_1 <- lapply(list3, stats_fun)
-output_over_1 <- ldply(output_over_1, data.frame)
-output_under_1 <- ldply(output_under_1, data.frame)
+Range 
+Sanitation = 30 70
+PDSI = -4  4
+Conflict = 0 40
+MPI =  0.1 0.5
 
-output_over_1$R_threshold <- "R >= 1"
-output_under_1$R_threshold <- "R <= 1"
-output <- rbind(output_over_1, output_under_1)
-output <- output[c(1,3,4,5,6,9,10,11,14,15)]
-names(output)[1]<-paste("Variable")
+# For MPI
+x <- seq(0.1,0.5, 0.02) 
+y <- predict(best_fit, data.frame(Sanitation = rep(43.64327, 21),
+                            PDSI = rep(0.2192958, 21), 
+                            MPI = x,
+                            monthly_conf = rep(7.152047, 21)))
 
-## Spatially - By state
-covariates <- c("Sanitation", "MPI", "monthly_conf", "PDSI")
-list2 <- list(data.frame(df2$state, df2$Sanitation), data.frame(df2$state, df2$MPI), 
-              data.frame(df2$state, df2$monthly_conf), data.frame(df2$state, df2$PDSI))
-colnames <- c("State", "Variable")
-list2 <- lapply(list2, setNames, colnames)
-names(list2) <- covariates
+y_mpi <- data.frame(x, y)
+y_mpi <- y_mpi %>% mutate(R_threshold = case_when(
+  y >= 1 ~ "Rt >= 1", 
+  y <= 1 ~ "Rt < 1"
+))
 
-list3 <- list(data.frame(df3$state, df3$Sanitation), data.frame(df3$state, df3$MPI), 
-              data.frame(df3$state, df3$monthly_conf), data.frame(df3$state, df3$PDSI))
-list3 <- lapply(list3, setNames, colnames)
-names(list3) <- covariates
-
-stats_fun_by_state <- function(covariates) {
-  stats <- describe(Variable~State, data = covariates)
-}
-output_over_1_1 <- lapply(list2, stats_fun_by_state)
-output_under_1_1 <- lapply(list3, stats_fun_by_state)
-
-fun2 <- function(covariates) {
-  do.call("rbind",covariates)
-  rownames_to_column(covariates, "State")
-}
-
-output_over_1_1 <- lapply(output_over_1_1, fun2)
-output_over_1_1 <- ldply(output_over_1_1, data.frame)
-output_over_1_1 <- output_over_1_1[c(1,2,4,5,6,7,10,11,12,15)]
-output_over_1_1$R_threshold <- "R >= 1"
-names(output_over_1_1)[1]<-paste("Variable")
-
-output_under_1_1 <- lapply(output_under_1_1, fun2)
-output_under_1_1 <- ldply(output_under_1_1, data.frame)
-output_under_1_1 <- output_under_1_1[c(1,2,4,5,6,7,10,11,12,15)]
-output_under_1_1$R_threshold <- "R <= 1"
-names(output_under_1_1)[1]<-paste("Variable")
-
-## Temporally - By date 
-list2 <- list(data.frame(df2$Date, df2$Sanitation), data.frame(df2$Date, df2$MPI), 
-              data.frame(df2$Date, df2$monthly_conf), data.frame(df2$Date, df2$PDSI))
-colnames <- c("Date", "Variable")
-list2 <- lapply(list2, setNames, colnames)
-names(list2) <- covariates
-
-list3 <- list(data.frame(df3$Date, df3$Sanitation), data.frame(df3$Date, df3$MPI), 
-              data.frame(df3$Date, df3$monthly_conf), data.frame(df3$Date, df3$PDSI))
-list3 <- lapply(list3, setNames, colnames)
-names(list3) <- covariates
-
-stats_fun_by_date <- function(covariates) {
-  stats <- describe(Variable~Date, data = covariates)
-}
-output_over_1_2 <- lapply(list2, stats_fun_by_date)
-output_under_1_2 <- lapply(list3, stats_fun_by_date)
-
-fun2 <- function(covariates) {
-  do.call("rbind",covariates)
-}
-
-fun3 <- function(covariates) {
-  rownames_to_column(covariates, "Date")
-}
-
-output_over_1_2 <- lapply(output_over_1_2, fun2)
-output_over_1_2 <- lapply(output_over_1_2, fun3)
-output_over_1_2 <- ldply(output_over_1_2, data.frame)
-output_over_1_2 <- output_over_1_2[c(1,2,4,5,6,7,10,11,12,15)]
-output_over_1_2$R_threshold <- "R >= 1"
-names(output_over_1_2)[1]<-paste("Variable")
-
-output_under_1_2 <- lapply(output_under_1_2, fun2)
-output_under_1_2 <- lapply(output_under_1_2, fun3)
-output_under_1_2 <- ldply(output_under_1_2, data.frame)
-output_under_1_2 <- output_under_1_2[c(1,2,4,5,6,7,10,11,12,15)]
-output_under_1_2$R_threshold <- "R <= 1"
-names(output_under_1_2)[1]<-paste("Variable")
-
-# Taken standard error and mean and used this to create the traffic-light 
-sanitation_red <- seq(48.9, 50, length.out = 15)
-sanitation_green <- seq(67.3, 68.7, length.out = 15)
-sanitation_amber <- (((sanitation_green-sanitation_red)/2)+sanitation_red)
-
-mpi_red <- seq(0.27, 0.29, length.out = 15)
-mpi_green <- seq(0.08, 0.1, length.out = 15)
-mpi_amber <- (((mpi_red-mpi_green)/2)+mpi_green)
-
-pdsi_red <- seq(-0.5, -0.34, length.out = 15)
-pdsi_green <- seq(-1.66, -1.44, length.out = 15)
-pdsi_amber <- (((pdsi_red-pdsi_green)/2)+pdsi_green)
-
-conflict_red <- seq(2.21, 2.8, length.out = 15)
-conflict_green <- seq(3.7, 4.31, length.out = 15)
-conflict_amber <- (((conflict_green-conflict_red)/2)+conflict_red)
-
-preds_green <- predict(best_fit, data.frame(monthly_conf=conflict_green, 
-                                            PDSI=pdsi_green, 
-                                            Sanitation=sanitation_green, 
-                                            MPI=mpi_green))
-                                            
-                                            
-preds_amber <- predict(best_fit, data.frame(monthly_conf=conflict_amber, 
-                                            PDSI=pdsi_amber, 
-                                            Sanitation=sanitation_amber, 
-                                            MPI=mpi_amber))
-
-preds_red <- predict(best_fit, data.frame(monthly_conf=conflict_red, 
-                                          PDSI=pdsi_red, 
-                                          Sanitation=sanitation_red, 
-                                          MPI=mpi_red))
-numbers <- seq(1,15,1)
-
-preds <- data.frame(numbers, preds_red, preds_amber, preds_green)
-preds <- preds %>% gather(Light, Prediction, 2:4)
-preds$Light[preds$Light == "preds_red"] <- "Red"
-preds$Light[preds$Light == "preds_amber"] <- "Amber"
-preds$Light[preds$Light == "preds_green"] <- "Green"
-
-preds$Light <- factor(preds$Light, levels = c("Red", "Amber", "Green"))
-
-## Compare them all again 
-conflict <- data.frame(numbers, conflict_red, conflict_amber, conflict_green)
-mpi <- data.frame(numbers, mpi_red, mpi_amber, mpi_green)
-sanitation <- data.frame(numbers, sanitation_red, sanitation_amber, sanitation_green)
-pdsi <- data.frame(numbers, pdsi_red, pdsi_amber, pdsi_green)
-
-conflict <- conflict %>% gather(Light, Prediction, 2:4)
-mpi <- mpi %>% gather(Light, Prediction, 2:4)
-sanitation <- sanitation %>% gather(Light, Prediction, 2:4)
-pdsi <- pdsi %>% gather(Light, Prediction, 2:4)
-# There was some manipulaton of these to understand the relationships and tweak the covaraites around R = 1 
-
+ggplot(y_conf, aes(x = R_threshold, y = x, color = R_threshold)) + 
+         geom_point(size = 2) + 
+  scale_color_manual(values = c("green","red")) + theme_bw() + coord_flip() + 
+  labs(x = "Rt", y = "Multidimentional Poverty Index", 
+       title = "MPI") + 
+  guides(color = FALSE) + 
+  theme(axis.text = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"),
+        title = element_text(face = "bold", size = 12))
+# Repeat for the other covariates 
 
 
 
