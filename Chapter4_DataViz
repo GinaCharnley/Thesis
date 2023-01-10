@@ -11,6 +11,23 @@ library(zoo)
 library(lubridate)
 library(ggpubr)
 
+ggplot(subset(dat1, Variable == PDSI)) + 
+  geom_errorbar(aes(x = State, ymin = mean-se, ymax = mean+se, color = R_threshold), 
+                size = 1.5, alpha = .7, width = 1) + coord_flip() + 
+  theme_bw() + scale_color_manual(values = c("orange", "navy")) + 
+  labs(y = "Palmers Drought Severity Index", color = "R Threshold") + 
+  theme(axis.text = element_text(face = "bold"), 
+        axis.title = element_text(face = "bold"), 
+        legend.title = element_text(face = "bold", size = 12), 
+        legend.text = element_text(face = "bold"), 
+        legend.position = "top", 
+        legend.key.size = unit(1, 'cm')) + 
+  annotate("text", x = 13, y = -3, label = "x", color = "red", fontface = "bold") + 
+  annotate("text", x = 24, y = -3, label = "x", color = "red", fontface = "bold") + 
+  annotate("text", x = 25, y = -3, label = "x", color = "red", fontface = "bold") + 
+  annotate("text", x = 26, y = -3, label = "x", color = "red", fontface = "bold")
+ # Repeat for conflict 
+
 # Fig. 1a
 nga <- st_read("nga_admbnda_adm1_osgof_20161215.shp", stringsAsFactors = FALSE) 
 # Shapefiles from same location as Chapter 3
