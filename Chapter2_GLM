@@ -123,7 +123,7 @@ as.data.frame(parm_out)
 ## GENERALISED LINEAR MODEL FITTING & PROJECTIONS
 # Fitting the model 
 fit <- glm(Outbreak ~ Mean_drought + withdrawal_percap + Avg_temp + Population_log + Poverty_headcount,
-           data = data1, family = binomial)
+           data = data1, family = binomial(link="cloglog"))
 
 # Calculating BIC 
 BIC(fit)
