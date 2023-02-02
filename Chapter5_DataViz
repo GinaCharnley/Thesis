@@ -180,4 +180,16 @@ ggplot(subset(proj5, Year == 2050), aes(x = Scenario, y = Proj, fill = Region)) 
         axis.text = element_text(face="bold", size = 10),
         axis.title = element_text(face="bold", size = 10),
         legend.position = "top") + guides(colour = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
-
+ggplot(Proj_data, aes(x = Year, y = Proj, ymin = low, ymax = high, 
+                      color = Scenario, fill = Scenario)) + 
+  geom_point(size = 3, position=position_dodge(width=3)) +
+  geom_errorbar(alpha = .4, size = 1, position=position_dodge(width=3))+ 
+  theme_bw() + 
+  labs(y = "National Projected Cholera R", color = "", fill = "") + 
+  scale_fill_manual(values = c("#FD8D3C", "#6BAED6", "#74C476", "#FB6A4A","#9E9AC8")) + 
+  scale_color_manual(values = c("#FD8D3C", "#6BAED6", "#74C476", "#FB6A4A","#9E9AC8")) +
+  theme(legend.key.size = unit(1, 'cm'), 
+        legend.text = element_text(size=12, face = "bold"), 
+        axis.text = element_text(face="bold", size = 10),
+        axis.title = element_text(face="bold", size = 10),
+        legend.position = "top")
